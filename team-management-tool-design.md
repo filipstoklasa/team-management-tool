@@ -347,7 +347,7 @@ Section 7 offered options. This section decides them. Where the two differ, **Se
 | Layer | Choice | Why |
 |---|---|---|
 | Framework | **Next.js 16.3.3** — App Router, Turbopack | Single deployable, per §7. Server and client in one TypeScript project |
-| Navigation | **Instant Navigations** — `cacheComponents` + `partialPrefetching` | Shipped in 16.3. See §10.5 |
+| Rendering | **Server Components**, rendered per request | No cache layer at all — see §10.5 |
 | UI | **React 19.2**, **TypeScript 5.x** `strict` | |
 | Styling | **Tailwind CSS v4.3** + **shadcn/ui** | shadcn components copied into the repo, not a runtime dependency |
 | Charts | **Recharts**, via shadcn's `chart` component | §6.3 staffing-over-time |
@@ -355,7 +355,7 @@ Section 7 offered options. This section decides them. Where the two differ, **Se
 | ORM | **Drizzle ORM 0.45.2** + **drizzle-kit 0.31.10** | §7 named Prisma or Drizzle; Drizzle has zero runtime dependencies and no codegen step |
 | Validation | **Zod** | One schema shared by client form and server action |
 | Unit tests | **`node --test`** — no dependencies | Node 26 runs `.ts` test files natively via type-stripping |
-| E2E | **`@next/playwright`** `instant()` | Added after build step 7 (§8), not before |
+| E2E | **Playwright**, optional | Deferred until after build step 7 (§8); not required by the architecture |
 | Runtime | **Node v26.7.0** (fnm), **npm** | |
 
 **Verified on this machine, not assumed:**
@@ -402,9 +402,9 @@ moodys-team-management/
     │   ├── allocation/{schema.ts,client.ts}
     │   └── people/{schema.ts,client.ts}
     ├── data/                          read layer
-    │   ├── allocation.ts              cached
+    │   ├── allocation.ts
     │   ├── entities.ts                cached
-    │   └── people.ts                  NEVER cached — see §10.6
+    │   └── people.ts                  force-dynamic — see §10.6
     ├── actions/                       "use server" mutations
     ├── domain/                        pure logic + colocated .test.ts
     │   ├── intervals.ts
@@ -482,93 +482,77 @@ journal_mode = WAL        foreign_keys = ON
 busy_timeout = 5000       synchronous  = NORMAL
 ```
 
-### 10.5 Instant Navigation
+### 10.5 Rendering and data flow
 
-This is the part of the architecture that needed real design work, because there is a genuine tension: Instant Navigation is built on cached reads, and this is a mutable single-user CRUD tool where every number on screen is something you just edited.
+Server Components read `src/data/*` directly. **There is no cache layer**, and that is a decision rather than an omission.
 
-**Enabling it.** Both flags are top-level in 16.3; partial prefetching requires cache components.
+An earlier draft of this section was built on Next.js 16.3's Instant Navigations (`cacheComponents` + `partialPrefetching`). It was removed. The reasoning is recorded here so it is not reintroduced by reflex:
+
+- That feature exists to hide **server and network latency** — a round trip to a datacentre, a query against a remote database, a cold serverless function. This app has none of those. It runs on loopback against a SQLite file opened in the same process, where reading the entire allocation table costs well under a millisecond. The latency it removes is latency this app never had.
+- The cost was real: a cache-tag taxonomy to keep correct, an `updateTag`-versus-`revalidateTag` judgement on every mutation, a dev-overlay validation loop to satisfy on every route, and — worst — a caching layer that actively wanted to write Module B note content into `.next/cache`, which then needed a carve-out to keep §9.2 true.
+- Removing it deletes that entire class of problem. Navigation stays fast, because the work it was hiding was already fast.
+
+What the framework configuration now contains is close to nothing — but one line is load-bearing and must not be lost:
 
 ```ts
 // next.config.ts
 const nextConfig: NextConfig = {
-  cacheComponents: true,
-  partialPrefetching: true,
-  serverExternalPackages: ['better-sqlite3'],   // native module, never bundled
+  serverExternalPackages: ['better-sqlite3'],   // native module — never bundle it
+  async headers() { /* production CSP — see §10.9 */ },
 }
 ```
 
-**Resolution of the tension: cache aggressively, invalidate precisely.**
+`serverExternalPackages` keeps Turbopack from attempting to bundle the prebuilt `.node` binary. Without it the build fails at the point the driver is first imported.
 
-Module A reads are cached with a long life, because the data does not go stale on a timer — it goes stale when *you* change it. Time-based revalidation would be pure overhead.
+**Rendering model.**
 
-```ts
-// src/data/allocation.ts
-export async function getAllocationStateAsOf(date: IsoDate) {
-  'use cache'
-  cacheTag('allocations')
-  cacheLife('max')
-  return db.select().from(allocation).where(
-    and(lte(allocation.startDate, date),
-        or(isNull(allocation.endDate), gt(allocation.endDate, date))))
-}
-```
+- Every route is server-rendered per request. Module A routes are dynamic by nature — they read `searchParams` or `params` and query the database on each request — and `revalidatePath` after a mutation keeps them honest. Module B routes additionally declare `export const dynamic = 'force-dynamic'`, for the reason given in §10.6.
+- **`loading.tsx` at each route segment** gives an immediate skeleton on navigation. `<Link>`'s default `prefetch` behaviour for a dynamic route is to fetch the partial route down to the nearest `loading.tsx` boundary, so the skeleton is already in the client when you click. This is the ordinary App Router pattern and needs no configuration.
+- **Prefetching only runs in production builds.** `next dev` does not prefetch at all, so navigation will feel slower while developing than it does in use. This is a property of the dev server, not of the app — do not "fix" it. It is also the reason daily use should be `npm run build && npm run start` rather than leaving `next dev` running (§10.10).
+- `<Suspense>` is used *inside* a page where one panel is meaningfully slower than its siblings, so the fast panels are not held up waiting. Here it is a layout tool, chosen where it helps, not an obligation imposed by a framework flag.
 
-Tag taxonomy: `users` / `user:<id>`, `teams` / `team:<id>`, `apps` / `app:<id>`, `allocations` / `allocations:user:<id>` / `allocations:app:<id>`.
-
-**Mutations use `updateTag`, never `revalidateTag`.** This distinction matters more here than in a typical content site. `revalidateTag` is stale-while-revalidate: it would serve the *previous* allocation total for a moment after you hit save, so you would watch a number you just changed briefly show its old value. `updateTag` expires immediately and gives read-your-own-writes. For an editor that is not a preference, it is a correctness requirement.
-
-**The date control (§6.1) is the hard case.** `?date=YYYY-MM-DD` is URL data, so by definition it cannot live in the App Shell that every link to the dashboard shares. The fix is to never await it at the top of the page:
+**The date control (§6.1) becomes ordinary.** `?date=YYYY-MM-DD` is read at the top of the page with `await searchParams` — there is no App Shell rule to work around and no promise to thread down through boundaries:
 
 ```tsx
-// src/app/page.tsx — the shell renders without knowing the date
-export default function Dashboard({ searchParams }: PageProps<'/'>) {
-  return (
-    <>
-      <DateControl />          {/* client component, reads the URL itself */}
-      <TeamFilter />
-      <Suspense fallback={<SummarySkeleton />}>
-        <SummaryStrip searchParams={searchParams} />
-      </Suspense>
-      <Suspense fallback={<PeoplePanelSkeleton />}>
-        <PeoplePanel searchParams={searchParams} />
-      </Suspense>
-      <Suspense fallback={<AppsPanelSkeleton />}>
-        <AppsPanel searchParams={searchParams} />
-      </Suspense>
-    </>
-  )
+export default async function Dashboard({ searchParams }: PageProps<'/'>) {
+  const { date = today(), teams } = await searchParams
+  const [people, apps] = await Promise.all([
+    getPeopleAllocationAsOf(date, teams),
+    getAppsAllocationAsOf(date, teams),
+  ])
+  return <>{/* summary strip, people panel, apps panel */}</>
 }
 ```
 
-Each child awaits the promise inside its own boundary and calls the cached read. The result: page chrome and panel frames paint the instant you click, panels stream in, and **any date you have already viewed comes back instantly** because it is cached per date.
+The prev/next period arrows are plain `<Link>`s; the free-form picker uses `router.replace()` with `useTransition()` for a pending state.
 
-**Time travel becomes prefetched navigation.** The prev/next period arrows are `<Link prefetch>` rather than buttons, so per-link prefetching resolves the neighbouring date *before* the click. Stepping week by week through the timeline has no wait at all. Free-form date picking falls back to `router.replace()` with `useTransition()` for a pending state, since an arbitrary date cannot be prefetched.
+**Person view (§6.2) still uses one route per tab** under a shared `layout.tsx`. The justification is no longer prefetching — it is that a tab should be linkable, survive a refresh, and appear in browser history. That reason stands on its own and is the reason the decision survives the simplification.
 
-**Person view (§6.2) uses routes, not client-state tabs.** Each tab is a real route under a shared `layout.tsx`, so switching tabs is a navigation that Instant Navigation can make instant, and a tab is linkable and survives a refresh. The person header depends on `params`, so it sits inside `<Suspense>` in the layout — but the name comes from Module A's `users` table, so it is cacheable and lands in the prefetch.
+**Dashboard rows carry Module B data**, which is where §10.3 and §10.5 meet. "Days since last 1:1" per person, and the overdue-1:1 and open-action-item counts in the summary strip, all read `people.db`. They sit in their own `<Suspense>` boundary so that the allocation panels never wait on them, never fail because of them, and simply render without those columns when `people.db` is absent.
 
-**Dashboard rows carry Module B data**, and this is where §10.3, §10.5 and §10.6 meet. "Days since last 1:1" per person and the overdue-1:1 and open-action-item counts in the summary strip all read `people.db`. They are therefore uncached, sit in their own `<Suspense>` boundaries separate from the allocation panels, and **disappear entirely when `people.db` is absent**. The allocation panels never wait on them.
+**After a mutation**, the server action calls `revalidatePath` for the affected routes (§10.7). With no data cache in play, this does one job only: clearing the client-side Router Cache so a back-navigation cannot show a payload that predates the edit.
 
-**Validation.** `validationLevel` stays at its default `'warning'`, so every page is checked in `next dev` and blocking navigations surface in the dev overlay as they are introduced. `export const instant = false` is the documented escape hatch; the 1:1 editor is the likely candidate if its prep panel cannot be made instant without caching note content — in which case it stays non-instant, because §10.6 outranks it.
+### 10.6 Keeping Module B out of the build output
 
-### 10.6 Module B never touches the cache
+§9.2 requires that `allocation.db` can be handed over, demoed or screenshotted with `people.db` simply absent. That holds only if note text lives in `people.db` and nowhere else.
 
-Cache Components serialises cached results to disk under `.next/cache`. That is local, but it is a **second copy of the data outside `people.db`**, which would quietly defeat §9.2: `allocation.db` could be handed over with `people.db` withheld, and note text would still be sitting in the build cache.
+Dropping the cache layer (§10.5) removes the main threat outright: with no `'use cache'`, nothing is written to `.next/cache` at all. One residual path remains — **build-time prerendering**, which would bake rendered note content into `.next/server/app/`. It is closed explicitly rather than left to inference about what Next.js will decide to prerender:
 
-So: **no `'use cache'` directive appears anywhere in `src/data/people.ts` or in any Module B component.** 1:1 notes, goal details and feedback content are read by uncached async components inside `<Suspense>` boundaries.
+```ts
+// every Module B route segment
+export const dynamic = 'force-dynamic'
+```
 
-This is worth stating clearly, because it looks like a sacrifice and is not: **"uncached data inside a Suspense boundary" is a first-class Instant Navigation pattern** — it is precisely the "Stream" fix that Next.js's own validation recommends. Module B pages pass instant-navigation validation. Person-view navigation stays instant: the shell, the person header, the tab chrome and all Module A allocation data are cached and prefetched, and only the note bodies stream in. What is lost is a few milliseconds on note text. What is gained is that note text provably exists in exactly one file.
+Rules that follow:
 
-Consequences that follow from this rule:
+- No `'use cache'`, no `unstable_cache`, and no `generateStaticParams` under `src/data/people.ts`, `src/components/people/`, or any Module B route. An ESLint `no-restricted-syntax` rule enforces this, so it cannot arrive later as a well-meaning performance tweak.
+- The §9.5 hard-delete is genuinely complete: deleting the rows from `people.db` deletes the data, with no cache entry and no prerendered artefact left to sweep up afterwards.
+- Module B content never appears in a build output that could be committed, copied or shared.
+- **§9.5's leaver flow crosses the module boundary, so it is specified here.** Deactivating a user is a Module A write and must never cascade into Module B automatically: allocation history is retained for capacity analysis, while personal notes are not. `deactivateUser()` therefore writes only to `allocation.db`, then — if `peopleDbAvailable()` — returns a flag that prompts a *separate, explicitly confirmed* hard delete of that user's Module B records. Two actions, two confirmations, never one cascading write.
 
-- Module B content never enters a prerendered static shell, so it cannot leak through the build output either.
-- The §9.5 hard-delete is genuinely complete: deleting the rows from `people.db` deletes the data, with no cache entry to sweep afterwards.
-- `'use cache: private'` is not used. It would keep data out of `.next/cache` but push it into the browser cache instead, which is no better and adds constraints.
+**The §5.2 prep panel is where the separation gets tested.** That panel is the whole reason the two modules share an application, and it deliberately mixes them: current allocation and recent allocation changes come from Module A, while open action items, unshared feedback and stalling goals come from Module B. It is assembled from two independent reads in the component tree, never from one function that queries both databases. That keeps the Module A half rendering normally when `people.db` is absent, and keeps a single failure in Module B from taking the panel down.
 
-**The §5.2 prep panel is where the rule gets tested.** That panel is the whole reason the two modules share an app, and it deliberately mixes them: current allocation and recent allocation changes come from Module A, while open action items, unshared feedback and stalling goals come from Module B. It is therefore built as two separate `<Suspense>` boundaries rather than one — the allocation half is cached and arrives with the prefetch, the Module B half is uncached and streams. The panel is never assembled by a single function that reads both databases, because such a function could not be cached without dragging note content into the cache with it.
-
-**§9.3's guidance is a component, not a notice.** The requirement is persistent helper text in the 1:1 editor, explicitly *not* a dismissible one-time notice. It is implemented as a static, always-rendered panel in the editor layout with no dismiss control and no persisted "seen" state — there is nothing to dismiss and nothing to remember. It renders in the shell, so it is present before any note content loads.
-
-**Guard:** an ESLint `no-restricted-syntax` rule bans the `'use cache'` directive under `src/data/people.ts` and `src/components/people/`. The rule fails the lint, so this cannot be reintroduced by a well-meaning performance tweak six months from now.
+**§9.3's guidance is a component, not a notice.** The requirement is persistent helper text in the 1:1 editor, explicitly *not* a dismissible one-time notice. It is implemented as a static, always-rendered panel in the editor layout with no dismiss control and no persisted "seen" state — there is nothing to dismiss and nothing to remember. It is part of the page, so it is present before any note content loads.
 
 ### 10.7 Mutations and validation
 
@@ -604,9 +588,9 @@ export async function changeAllocation(input: ChangeInput): Promise<ActionResult
     return created
   })
 
-  updateTag('allocations')
-  updateTag(`allocations:user:${input.userId}`)
-  updateTag(`allocations:app:${input.appId}`)
+  revalidatePath('/')                                   // dashboard
+  revalidatePath(`/people/${input.userId}`, 'layout')   // person view, all tabs
+  revalidatePath(`/apps/${input.appId}`)
   return { ok: true, data: result, warnings: overAllocationWarnings(...) }
 }
 ```
@@ -635,7 +619,7 @@ Putting these in a pure layer means the hardest logic in the app is testable wit
 | No telemetry | Next.js telemetry is **on by default**. `NEXT_TELEMETRY_DISABLED=1` in `.env`, plus `npx next telemetry disable`. Verify with `npx next telemetry status` |
 | Not reachable off-box | `--hostname 127.0.0.1` on both `dev` and `start`. Loopback only, never `0.0.0.0` |
 | No build-time fetches | No `next/font/google` — system font stack. No remote images |
-| No remote cache | Plain `'use cache'` only. `'use cache: remote'` is for shared serverless caches and is never used |
+| No remote cache | There is no cache layer (§10.5). No `'use cache'`, no remote cache handler, nothing written to `.next/cache` |
 | No third-party DB UI | `drizzle-kit studio` is **not installed**. Its browser UI is served from `local.drizzle.studio`; the data connection stays on localhost, but a third-party page that can talk to `people.db` is not a risk worth taking for convenience |
 | No AI on Module B | §7's rule stands. No API client is present in the dependency tree to make it possible |
 
@@ -663,11 +647,10 @@ Mapping §8's build order onto this architecture:
 | 1. Schema, migrations, seed | `src/db/**`, `drizzle/**`, `scripts/seed.ts` | Both databases. Fictional names |
 | 2. Entity CRUD | `src/data/entities.ts`, `src/actions/entities.ts`, `src/app/admin/` | Deactivate, never delete (§6.6) |
 | 3. Allocation create/edit | `src/actions/allocation.ts`, `src/domain/intervals.ts` | The §10.7 transaction |
-| 4. "As of D" + metrics | `src/data/allocation.ts`, `src/domain/metrics.ts` | First `'use cache'` reads |
+| 4. "As of D" + metrics | `src/data/allocation.ts`, `src/domain/metrics.ts` | The §4.2 core query |
 | 5. Dashboard | `src/app/page.tsx` | The §10.5 Suspense split |
 | 6. Person view | `src/app/people/[userId]/` | Overview + Allocation tabs |
 | 7. 1:1s + carry-over | `src/data/people.ts`, `src/app/people/[userId]/one-on-ones/` | §10.6 applies from the first line. Hard-delete (§9.5) built here, not later |
-| — | `e2e/`, `@next/playwright` | Instant-navigation regression tests added once screens exist |
 | 8. Goals and feedback | `src/components/people/` | |
 | 9. App detail + chart | `src/app/apps/[appId]/` | shadcn `chart` |
 | 10. Audit, retention, polish | `src/app/retention/` | §9.5 retention review |
@@ -676,5 +659,5 @@ Mapping §8's build order onto this architecture:
 
 - `npx next telemetry status` reports disabled
 - `node --test` passes — especially the half-open boundary and per-point-in-time cases
-- The DevTools **Navigation Inspector** shows a meaningful shell on Dashboard and Person view, not a full-page skeleton
+- Every route has a `loading.tsx`, and navigation shows that skeleton rather than a blank or frozen page
 - `mv data/people.db /tmp && npm run dev` — **Module A remains fully usable with people data absent.** This is the §9.2 acceptance test, and it should be run whenever Module B is touched
