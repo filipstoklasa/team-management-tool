@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { asIsoDate } from "./date.ts";
-import type { DateRange } from "./intervals.ts";
+import { overlaps, type DateRange } from "./intervals.ts";
 import { overAllocatedSegments, segmentize, totalAsOf } from "./points-in-time.ts";
 
 const d = asIsoDate;
@@ -166,5 +166,38 @@ describe("totalAsOf", () => {
     const items = [alloc("planned", "2027-01-01", null, 100)];
     assert.equal(totalAsOf(items, getRange, getWeight, d("2026-06-01")), 0);
     assert.equal(totalAsOf(items, getRange, getWeight, d("2027-06-01")), 100);
+  });
+});
+
+describe("scoping breaches to the affected range", () => {
+  // §4.3 says the check runs "across the affected range". Reducing today's
+  // allocation must not warn about a breach that has already elapsed: that is
+  // a historical fact, not something the save caused, and nothing can be done
+  // about it. The actions filter segments this way before reporting them.
+  const items = [
+    alloc("gateway", "2026-01-01", null, 60),
+    alloc("pipeline", "2026-06-01", "2026-08-27", 60),
+  ];
+
+  const breachesIn = (affected: DateRange) =>
+    seg(items).filter((s) => overlaps(s.range, affected));
+
+  test("an elapsed breach is excluded when the change starts after it", () => {
+    // The 120% window ran Jun-Aug. A change taking effect 27 Aug onwards does
+    // not touch it.
+    const affected: DateRange = { start: d("2026-08-27"), end: null };
+    assert.deepEqual(breachesIn(affected), []);
+  });
+
+  test("the same breach IS reported when the change reaches back into it", () => {
+    const affected: DateRange = { start: d("2026-07-01"), end: null };
+    const found = breachesIn(affected);
+    assert.equal(found.length, 1);
+    assert.equal(found[0].total, 120);
+  });
+
+  test("a breach starting after the affected range still counts if they overlap", () => {
+    const affected: DateRange = { start: d("2026-01-01"), end: d("2026-12-31") };
+    assert.equal(breachesIn(affected).length, 1);
   });
 });

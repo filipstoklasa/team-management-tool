@@ -8,7 +8,7 @@ import {
   allocations,
   type Allocation,
 } from "@/db/allocation/schema.ts";
-import { formatIsoDate, type IsoDate } from "@/domain/date.ts";
+import { formatIsoDate, maxDate, minDate, type IsoDate } from "@/domain/date.ts";
 import { overlaps, type DateRange } from "@/domain/intervals.ts";
 import { overAllocatedSegments } from "@/domain/points-in-time.ts";
 import {
@@ -61,15 +61,22 @@ function findOverlaps(
 
 /**
  * §4.3, warning only: "Sum <= 100% per user is a WARNING, not a constraint …
- * The 100% check evaluates PER POINT IN TIME across the affected range, not
+ * The 100% check evaluates PER POINT IN TIME across the AFFECTED RANGE, not
  * just for today."
  *
- * Evaluated across every allocation the user holds on every app, so a breach
- * that only opens up weeks later is still reported.
+ * Two things follow from that wording, and both matter:
+ *
+ *  - Every allocation the user holds on every app is summed, not just the one
+ *    being edited, so a breach that only opens up weeks later is still caught.
+ *  - Only breaches overlapping `affected` are reported. Warning about a period
+ *    that has already elapsed is noise: it is a historical fact, not something
+ *    the save just caused, and it cannot be acted on. Reducing today's
+ *    allocation should not produce a warning about last quarter.
  */
 function overAllocationWarnings(
   tx: Tx,
   userId: number,
+  affected: DateRange,
   excludeId?: number,
 ): Warning[] {
   const rows = tx
@@ -79,12 +86,14 @@ function overAllocationWarnings(
     .all()
     .filter((r) => excludeId === undefined || r.id !== excludeId);
 
-  return overAllocatedSegments(rows, range, (r) => r.percentage).map((segment) => ({
-    message: `Over 100% (${segment.total}%) from ${formatIsoDate(segment.range.start)}${
-      segment.range.end === null ? " onwards" : ` until ${formatIsoDate(segment.range.end)}`
-    }`,
-    detail: `${segment.items.length} concurrent allocations`,
-  }));
+  return overAllocatedSegments(rows, range, (r) => r.percentage)
+    .filter((segment) => overlaps(segment.range, affected))
+    .map((segment) => ({
+      message: `Over 100% (${segment.total}%) from ${formatIsoDate(segment.range.start)}${
+        segment.range.end === null ? " onwards" : ` until ${formatIsoDate(segment.range.end)}`
+      }`,
+      detail: `${segment.items.length} concurrent allocations`,
+    }));
 }
 
 function refresh(userId: number, appId?: number) {
@@ -133,7 +142,13 @@ export async function createAllocation(
         })
         .run();
 
-      return { created, warnings: overAllocationWarnings(tx, v.userId) };
+      return {
+        created,
+        warnings: overAllocationWarnings(tx, v.userId, {
+          start: v.startDate,
+          end: v.endDate,
+        }),
+      };
     });
 
     refresh(v.userId, v.appId);
@@ -237,7 +252,7 @@ export async function changeAllocation(
         created,
         userId: current.userId,
         appId,
-        warnings: overAllocationWarnings(tx, current.userId),
+        warnings: overAllocationWarnings(tx, current.userId, candidate),
       };
     });
 
@@ -298,7 +313,15 @@ export async function correctAllocation(
         updated,
         userId: current.userId,
         appId: current.appId,
-        warnings: overAllocationWarnings(tx, current.userId),
+        // A correction can move dates either way, so the affected window spans
+        // both where the row was and where it now is.
+        warnings: overAllocationWarnings(tx, current.userId, {
+          start: minDate(current.startDate, v.startDate),
+          end:
+            current.endDate === null || v.endDate === null
+              ? null
+              : maxDate(current.endDate, v.endDate),
+        }),
       };
     });
 
