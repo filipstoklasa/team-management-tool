@@ -653,7 +653,7 @@ Seed data uses fictional names only, per §7.
 "db:migrate:allocation":  "drizzle-kit migrate  --config=drizzle.config.allocation.ts",
 "db:generate:people":     "drizzle-kit generate --config=drizzle.config.people.ts",
 "db:migrate:people":      "drizzle-kit migrate  --config=drizzle.config.people.ts",
-"db:seed":   "node --experimental-strip-types scripts/seed.ts"
+"db:seed":   "node scripts/seed.ts"
 ```
 
 Mapping §8's build order onto this architecture:
