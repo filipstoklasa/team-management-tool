@@ -18,6 +18,8 @@ import * as a from "../src/db/allocation/schema.ts";
 import * as p from "../src/db/people/schema.ts";
 
 const now = () => new Date();
+/** A timestamp on the given calendar date, at a plausible working hour. */
+const atDate = (d: IsoDate) => new Date(`${d}T10:30:00Z`);
 const T = today();
 const months = (n: number): IsoDate => addMonths(T, n);
 const days = (n: number): IsoDate => addDays(T, n);
@@ -163,9 +165,13 @@ for (const seed of seeds) {
     .returning()
     .get();
 
+  // Audit timestamps must match when the change actually happened, not when the
+  // seed ran. Otherwise every historical allocation looks like it changed today,
+  // and the §5.2 prep panel reports the entire history as "changed since the
+  // last 1:1" — which is exactly the signal that panel exists to give.
   adb.insert(a.allocationChanges).values({
     allocationId: row.id,
-    changedAt: now(),
+    changedAt: atDate(seed.startDate),
     changeType: "created",
     note: seed.note,
   }).run();
@@ -173,7 +179,7 @@ for (const seed of seeds) {
   if (seed.endDate !== null) {
     adb.insert(a.allocationChanges).values({
       allocationId: row.id,
-      changedAt: now(),
+      changedAt: atDate(seed.endDate),
       changeType: "ended",
       note: "Allocation ended",
     }).run();
