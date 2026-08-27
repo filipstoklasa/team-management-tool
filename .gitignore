@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+next-env.d.ts
+
+# Environment
+.env*
+!.env.example
+
+# Databases — never commit (§7, §9.2)
+# people.db holds personal data about identifiable employees.
+# allocation.db is excluded too: it is generated from migrations + seed.
+data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+
+# Exports (§9.2 — separate export paths)
+exports/
+
+# Tests
+playwright-report/
+test-results/
+
+# OS / editor
+.DS_Store
+*.swp
