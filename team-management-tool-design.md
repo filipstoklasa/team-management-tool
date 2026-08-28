@@ -312,7 +312,9 @@ Steps 1–7 constitute a genuinely useful daily tool. Everything after is refine
 
 ## 9. Data handling requirements — Module B
 
-Module B holds personal data about identifiable employees, processed in an employment context, in the EU, at a regulated financial-services employer. The following are build requirements, not suggestions.
+Module B holds personal data about identifiable people, recorded in an employment context. That is a categorically different kind of data from anything in Module A, and it carries obligations that Module A does not: under data-protection law wherever the tool is run, and under whatever additional regime the operating organisation is subject to. Both are stricter for employment records than for most other data, and stricter again in regulated industries.
+
+The following are build requirements, not suggestions.
 
 ### 9.1 Local only
 Storage is a local SQLite file on an encrypted disk. No cloud backup service, no sync, no third-party processing of note content. This is what makes a self-built tool defensible where a hosted one would not be.
