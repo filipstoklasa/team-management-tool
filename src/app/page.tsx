@@ -18,8 +18,7 @@ import {
   moduleBAvailable,
 } from "@/data/people.ts";
 import { formatIsoDate, parseIsoDate, today, type IsoDate } from "@/domain/date.ts";
-
-export const OVERDUE_1ON1_DAYS = 30;
+import { OVERDUE_1ON1_DAYS } from "@/lib/status.ts";
 
 /**
  * §6.1 — the dashboard. "Date control at the top drives every allocation panel

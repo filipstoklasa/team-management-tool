@@ -50,6 +50,14 @@ The check evaluates each point in time across the modified range, so a breach
 beginning three months out is reported today, and shortening an allocation that
 ends a breach clears the warning.
 
+### Overdue 1:1s
+
+A 1:1 is overdue 30 days after the last one, and someone with no 1:1 recorded at
+all counts as overdue rather than as missing data — they are the easiest people
+to lose track of. The interval is fixed for everyone; there is no per-person
+cadence to configure. The dashboard counts them and the people panel highlights
+the figure at the same threshold.
+
 ### 1:1 preparation
 
 Opening a 1:1 assembles what changed since the previous one: open action items,
@@ -67,7 +75,9 @@ not.*
 | Screen | Contents |
 |---|---|
 | Dashboard | People and apps as of any date, ordered so problems surface first. Team filter and summary counts. |
+| People | Every active person with allocation and days since last 1:1, as of today. The way into a person. |
 | Person | Overview, 1:1s, goals, feedback and a Gantt-style allocation timeline. One route per tab, so tabs are linkable and survive a refresh. |
+| Apps | Every active app against its required capacity, as of today. The way into an app. |
 | App | Staffing over time against required capacity, current and planned assignees, and the change history. |
 | Admin | People, teams and apps. Entities are deactivated, never deleted. |
 | Retention review | 1:1 notes and feedback past a configurable age, listed and deleted in bulk. |
