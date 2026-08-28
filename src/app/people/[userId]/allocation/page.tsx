@@ -8,23 +8,31 @@ import {
 import { Timeline } from "@/components/timeline";
 import { AllocationTable } from "@/components/allocation/allocation-table";
 import { NewAllocationButton } from "@/components/allocation/new-allocation-button";
+import { ReportToolbar } from "@/components/allocation/report-toolbar";
 import { getAllApps, getUser, getUserAllocationHistory } from "@/data/allocation.ts";
 import { appColor } from "@/lib/status.ts";
+import { filterByRange, parseReportRange } from "@/lib/report.ts";
 
 /** §6.2 Allocation tab — "Gantt-style timeline … over time, past and future." */
 export default async function PersonAllocationPage({
   params,
+  searchParams,
 }: PageProps<"/people/[userId]/allocation">) {
   const { userId } = await params;
   const id = Number(userId);
-  const [rows, user, apps] = await Promise.all([
+  const [all, user, apps] = await Promise.all([
     getUserAllocationHistory(id),
     getUser(id),
     getAllApps(),
   ]);
 
+  // #2 — the export range narrows what is on screen too, so that the CSV, the
+  // printed page and the tables can never show three different things.
+  const rows = filterByRange(all, parseReportRange(await searchParams));
+
   return (
     <div className="space-y-5">
+      <ReportToolbar csvBase={`/export?scope=person&id=${id}`} />
       <Card className="gap-3">
         <CardHeader>
           <CardTitle className="text-sm font-medium">Timeline</CardTitle>

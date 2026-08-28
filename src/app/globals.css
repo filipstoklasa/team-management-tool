@@ -193,3 +193,48 @@
   --font-geist-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", monospace;
 }
+
+/* ---------------------------------------------------------------------------
+   Print (#2).
+
+   "Export to PDF" is the browser's own print-to-PDF. That means the printed
+   page IS the report, so the chrome that only makes sense on screen — nav,
+   toasts, action buttons — has to come off, and the colour tokens have to be
+   forced back to their light values: a dark-mode screen would otherwise print
+   a black page, and most print pipelines drop backgrounds anyway, leaving
+   white-on-white text.
+--------------------------------------------------------------------------- */
+@media print {
+  :root,
+  :root[data-theme="dark"],
+  .dark {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.35 0 0);
+    --border: oklch(0.85 0 0);
+  }
+
+  header,
+  [data-slot="toaster"],
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+
+  main {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* Keep a card's header with its table rather than orphaning it on a page break. */
+  [data-slot="card"] {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
+  a[href]::after {
+    content: none;
+  }
+}
