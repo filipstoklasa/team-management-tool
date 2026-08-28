@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CircleDot, MessageSquareQuote, Target, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { AllocationRow } from "@/data/allocation.ts";
