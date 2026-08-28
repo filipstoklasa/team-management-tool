@@ -329,8 +329,12 @@ Anything that could become part of a formal HR or legal process belongs in the s
 
 Implementation: the 1:1 editor shows this guidance as persistent helper text, not a dismissible one-time notice.
 
-### 9.4 Employer policy
-Confirm with the employer whether managers may keep people-management records outside the sanctioned HR system, and align with whatever answer comes back. If the employer provides a sanctioned system for this, that system wins for anything formal, and this tool stays explicitly a personal working aid.
+### 9.4 Not a system of record
+This tool is a personal working aid. It is not, and must not present itself as, a system of record.
+
+Where a sanctioned HR system exists, that system is authoritative for anything formal — performance management, disciplinary matters, compensation — and this tool defers to it rather than duplicating it. §9.3 draws the same line at the level of individual notes; this is the same rule stated about the tool as a whole.
+
+The architecture is built so that an organisation's answer about keeping people-management records outside a sanctioned system can be honoured either way: Module B is a separate database that can be omitted entirely, leaving Module A fully functional (§9.2). Allocation planning does not depend on any of this.
 
 ### 9.5 Deletion and retention
 - **Hard delete per user** — a single action that removes all Module B records for one person, permanently. Not a soft-delete flag. Build this in step 7, not as an afterthought
