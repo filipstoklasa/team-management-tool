@@ -2,7 +2,7 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { IsoDate } from "../../domain/date.ts";
 
 /**
- * people.db — Module B (§5).
+ * people.db — 1:1s, goals and feedback (§5).
  *
  * Holds personal data about identifiable employees (§9). Kept in a separate
  * file so allocation.db can be demoed or handed over with this one simply

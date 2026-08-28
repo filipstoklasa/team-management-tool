@@ -11,10 +11,10 @@ import {
 import type { IsoDate } from "../../domain/date.ts";
 
 /**
- * allocation.db — Module A (§3, §4).
+ * allocation.db — allocations, users, teams and apps (§3, §4).
  *
  * This database contains no personal notes and is safe to demo, screenshot or
- * hand over on its own (§9.2). Module B lives in a separate file with no
+ * hand over on its own (§9.2). People records live in a separate file with no
  * foreign keys pointing here.
  */
 

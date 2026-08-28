@@ -9,7 +9,7 @@ import { DatabaseZap } from "lucide-react";
  * shape of the storage — but they are owed the reason and the fix, so the file
  * name survives as the closing detail rather than the opening one.
  */
-export function ModuleBUnavailable() {
+export function PeopleRecordsUnavailable() {
   return (
     <div className="text-muted-foreground rounded-lg border border-dashed px-6 py-10 text-center">
       <DatabaseZap className="mx-auto mb-2 size-5" />

@@ -186,7 +186,7 @@ for (const seed of seeds) {
   }
 }
 
-// ------------------------------------------------------------- Module B
+// -------------------------------------------------------- people records
 // Suitable content only, per §9.3: development goals, skill growth, project
 // ownership interests, factual summaries of what was discussed.
 

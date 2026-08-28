@@ -8,8 +8,8 @@ import {
 } from "@/data/allocation.ts";
 
 /**
- * §6.6 Admin. Everything here reads from Module A only — the panels never touch
- * `people.db`, so this screen works unchanged when Module B is absent (§9.2).
+ * §6.6 Admin. Everything here reads from allocation only — the panels never touch
+ * `people.db`, so this screen works unchanged when people records are absent (§9.2).
  * The one exception is the §9.5 leaver prompt, which the deactivate action
  * decides server-side and the dialog then runs.
  */

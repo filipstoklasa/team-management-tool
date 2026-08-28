@@ -1,5 +1,5 @@
 import { SectionTabs } from "@/components/section-tabs";
-import { moduleBAvailable } from "@/data/people.ts";
+import { peopleRecordsAvailable } from "@/data/people.ts";
 
 /**
  * §6.6 Admin and §9.5 retention, presented as one section (#5).
@@ -28,7 +28,7 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
       <SectionTabs
         tabs={[
           { href: "/admin", label: "People, apps and teams", exact: true },
-          ...(moduleBAvailable()
+          ...(peopleRecordsAvailable()
             ? [{ href: "/admin/retention", label: "Retention review" }]
             : []),
         ]}

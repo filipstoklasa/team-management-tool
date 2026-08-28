@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getUserAllocationsOn } from "@/data/allocation.ts";
-import { getActionItems, getGoals, getLastOneOnOne, moduleBAvailable } from "@/data/people.ts";
+import { getActionItems, getGoals, getLastOneOnOne, peopleRecordsAvailable } from "@/data/people.ts";
 import { daysBetween, formatIsoDate, today } from "@/domain/date.ts";
 import { appColor, formatPercent } from "@/lib/status.ts";
 
@@ -27,7 +27,7 @@ export default async function OverviewPage({ params }: PageProps<"/people/[userI
         </CardContent>
       </Card>
 
-      {moduleBAvailable() && (
+      {peopleRecordsAvailable() && (
         <>
           <Card className="gap-3">
             <CardHeader>

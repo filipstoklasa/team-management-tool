@@ -202,7 +202,7 @@ function UsersPanel({ users, teams }: { users: UserWithTeams[]; teams: Team[] })
                 }
                 toast.success(user.active ? "Deactivated" : "Reactivated");
                 // §9.5 — prompt, never cascade.
-                if (result.data.promptModuleBDeletion) {
+                if (result.data.promptPeopleRecordsDeletion) {
                   setLeaver({ id: user.id, name: user.name });
                 }
               })

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { AllocationBar } from "@/components/allocation-bar";
 import { getPeopleAllocation } from "@/data/allocation.ts";
-import { getDaysSinceLastOneOnOne, moduleBAvailable } from "@/data/people.ts";
+import { getDaysSinceLastOneOnOne, peopleRecordsAvailable } from "@/data/people.ts";
 import { today } from "@/domain/date.ts";
 import { formatPercent, personStatusMeta } from "@/lib/status.ts";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,7 @@ export default async function PeopleIndexPage() {
     getPeopleAllocation(date),
     getDaysSinceLastOneOnOne(),
   ]);
-  const showModuleB = moduleBAvailable();
+  const showPeopleRecords = peopleRecordsAvailable();
 
   return (
     <div className="space-y-5">
@@ -60,7 +60,7 @@ export default async function PeopleIndexPage() {
                         {team.name}
                       </span>
                     ))}
-                    {showModuleB && (
+                    {showPeopleRecords && (
                       <span className={cn("ml-auto", since === undefined && "text-status-under")}>
                         {since === undefined ? "no 1:1 yet" : `1:1 ${since}d ago`}
                       </span>

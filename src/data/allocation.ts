@@ -359,7 +359,7 @@ export async function getTeamsForUsers(userIds: number[]) {
     .where(inArray(userTeams.userId, userIds));
 }
 
-/** Counts for the §6.1 summary strip that come from Module A. */
+/** Counts for the §6.1 summary strip that come from allocation. */
 export async function getAllocationSummary(date: IsoDate, teamIds?: number[]) {
   const [people, appRows] = await Promise.all([
     getPeopleAllocation(date, teamIds),

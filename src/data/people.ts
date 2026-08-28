@@ -16,7 +16,7 @@ import {
 import { addDays, daysBetween, today, type IsoDate } from "@/domain/date.ts";
 
 /**
- * Module B reads (§5).
+ * People-records reads (§5).
  *
  * TWO RULES GOVERN THIS FILE, both from §10.6:
  *
@@ -25,13 +25,13 @@ import { addDays, daysBetween, today, type IsoDate } from "@/domain/date.ts";
  *      text in a second location outside people.db and defeat §9.2. An ESLint
  *      rule enforces this; the reason is here so the rule is not a mystery.
  *
- *   2. EVERY FUNCTION TOLERATES AN ABSENT DATABASE. §9.2 requires Module A to
+ *   2. EVERY FUNCTION TOLERATES AN ABSENT DATABASE. §9.2 requires allocation to
  *      be fully usable with people.db missing, so these return empty results
- *      rather than throwing. Callers check `moduleBAvailable()` when they need
+ *      rather than throwing. Callers check `peopleRecordsAvailable()` when they need
  *      to distinguish "no records" from "no database".
  */
 
-export function moduleBAvailable(): boolean {
+export function peopleRecordsAvailable(): boolean {
   return peopleDbAvailable();
 }
 
@@ -158,7 +158,7 @@ export async function getFeedback(userId: number): Promise<Feedback[]> {
  * "The mechanism that makes 1:1s continuous rather than a series of
  * disconnected conversations."
  *
- * Deliberately returns ONLY the Module B half. The Module A half (current
+ * Deliberately returns ONLY the people records half. The allocation half (current
  * allocation and any change since the last 1:1) is fetched separately by the
  * caller and joined in the component tree — §10.6 forbids a single function
  * that reads both databases, because that function could not survive
@@ -221,7 +221,7 @@ export async function getPrepPanelData(userId: number): Promise<PrepPanelData> {
   };
 }
 
-/** Counts for the §6.1 summary strip that come from Module B. */
+/** Counts for the §6.1 summary strip that come from people records. */
 export async function getPeopleSummary() {
   const db = getPeopleDb();
   if (!db) return null;

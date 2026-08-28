@@ -15,7 +15,7 @@ import {
   getDaysSinceLastOneOnOne,
   getOpenActionItemCount,
   getPeopleSummary,
-  moduleBAvailable,
+  peopleRecordsAvailable,
 } from "@/data/people.ts";
 import { formatIsoDate, parseIsoDate, today, type IsoDate } from "@/domain/date.ts";
 import { OVERDUE_1ON1_DAYS } from "@/lib/status.ts";
@@ -115,10 +115,10 @@ async function Summary({ date, teamIds }: { date: IsoDate; teamIds: number[] }) 
     },
   ];
 
-  // Module B contributions — omitted entirely when people.db is absent (§9.2).
+  // People-records contributions — omitted entirely when people.db is absent (§9.2).
   if (peopleSummary) {
     // The join happens here, not in a data function: "overdue" needs the active
-    // roster from Module A and the last-1:1 dates from Module B. Someone who has
+    // roster from allocation and the last-1:1 dates from people records. Someone who has
     // never had a 1:1 counts as overdue — they are the ones most easily missed.
     const overdue = people.filter((p) => {
       const since = peopleSummary.daysSinceLastOneOnOne.get(p.user.id);
@@ -154,7 +154,7 @@ async function People({ date, teamIds }: { date: IsoDate; teamIds: number[] }) {
       people={people}
       daysSince={daysSince}
       openItems={openItems}
-      showModuleB={moduleBAvailable()}
+      showPeopleRecords={peopleRecordsAvailable()}
     />
   );
 }
