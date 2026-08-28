@@ -7,9 +7,21 @@
  * after it rather than failing loudly.
  */
 
-/** Fields containing a delimiter, quote or newline are quoted; quotes double. */
+/**
+ * Quoted when the field contains a quote, a newline, or any character a
+ * spreadsheet might treat as a separator — comma, semicolon, tab, and space.
+ *
+ * Space is the one that is not required by RFC 4180 and matters most in
+ * practice. Both the LibreOffice and Excel import dialogs remember their last
+ * separator selection, so a file opened once with "space" ticked splits
+ * "Hina Matsumoto" into two cells and slides every later column out from under
+ * its header. Quoting costs two bytes and removes the whole failure mode.
+ *
+ * Numbers and ISO dates contain none of these and stay bare, so they import as
+ * values a spreadsheet will sum rather than as text.
+ */
 function escapeField(value: string): string {
-  return /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+  return /[",;\t\r\n ]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
 }
 
 /**

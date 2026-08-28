@@ -30,6 +30,23 @@ describe("CSV serialisation", () => {
     assert.equal(toCsv(["pct"], [[50]]), "pct\r\n50");
   });
 
+  test("a field containing a space is quoted", () => {
+    // Not required by RFC 4180, but spreadsheets are routinely opened with
+    // space enabled as a separator alongside comma — a sticky setting in both
+    // the LibreOffice and Excel import dialogs. Unquoted, "Hina Matsumoto"
+    // becomes two cells and every later column slides out from under its
+    // header. Quoting survives that; the file stays valid either way.
+    assert.equal(toCsv(["Start date"], [["Hina Matsumoto"]]),
+      '"Start date"\r\n"Hina Matsumoto"');
+  });
+
+  test("numbers and ISO dates stay unquoted so they import as values", () => {
+    // The flip side: quoting everything would make a spreadsheet treat the
+    // percentage as text and refuse to sum it.
+    assert.equal(toCsv(["pct", "start"], [[100, "2026-10-08"]]),
+      "pct,start\r\n100,2026-10-08");
+  });
+
   test("a header with no rows is still valid output", () => {
     assert.equal(toCsv(["a", "b"], []), "a,b");
   });
