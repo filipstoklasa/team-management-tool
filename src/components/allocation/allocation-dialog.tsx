@@ -174,8 +174,17 @@ export function AllocationDialog({
         <div className="space-y-4">
           {mode === "create" ? (
             <div className="grid grid-cols-2 gap-3">
+              {/*
+                The side the screen fixes is locked, not merely prefilled — see
+                §6.4. Opening this from an app page and picking a different app
+                would silently contradict where you started.
+              */}
               <Field label="Person" error={errorFor("userId")}>
-                <Select value={userId} onValueChange={setUserId}>
+                <Select
+                  value={userId}
+                  onValueChange={setUserId}
+                  disabled={defaultUserId !== undefined}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select…" />
                   </SelectTrigger>
@@ -189,7 +198,11 @@ export function AllocationDialog({
                 </Select>
               </Field>
               <Field label="App" error={errorFor("appId")}>
-                <Select value={appId} onValueChange={setAppId}>
+                <Select
+                  value={appId}
+                  onValueChange={setAppId}
+                  disabled={defaultAppId !== undefined}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select…" />
                   </SelectTrigger>

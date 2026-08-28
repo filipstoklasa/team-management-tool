@@ -2,12 +2,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { AllocationTable } from "@/components/allocation/allocation-table";
 import { Timeline } from "@/components/timeline";
 import { StaffingChart } from "@/components/apps/staffing-chart";
 import { ChangeHistory } from "@/components/allocation/change-history";
+import { NewAllocationButton } from "@/components/allocation/new-allocation-button";
 import {
+  getAllUsers,
   getAllocationChanges,
   getApp,
   getAppAllocationHistory,
@@ -27,11 +35,12 @@ export default async function AppDetailPage({ params }: PageProps<"/apps/[appId]
   const app = await getApp(id);
   if (!app) notFound();
 
-  const [rows, staffing, changes, allApps] = await Promise.all([
+  const [rows, staffing, changes, allApps, users] = await Promise.all([
     getAppAllocationHistory(id),
     getAppStaffingOverTime(id),
     getAllocationChanges({ appId: id, limit: 30 }),
     getAppsAllocation(today()),
+    getAllUsers(),
   ]);
 
   const entry = allApps.find((a) => a.app.id === id);
@@ -104,6 +113,15 @@ export default async function AppDetailPage({ params }: PageProps<"/apps/[appId]
       <Card className="gap-0 overflow-hidden py-0">
         <CardHeader className="bg-muted/40 border-b py-3">
           <CardTitle className="text-sm font-medium">All allocations</CardTitle>
+          {/* §6.4 — create from the app's side, with the app fixed. */}
+          <CardAction>
+            <NewAllocationButton
+              label="Allocate someone"
+              users={users}
+              apps={[{ id: app.id, name: app.name }]}
+              defaultAppId={app.id}
+            />
+          </CardAction>
         </CardHeader>
         <CardContent className="p-0">
           <AllocationTable rows={rows} showApp={false} />

@@ -259,6 +259,7 @@ One screen per report, tabbed. This is the screen used most.
 Modal or page. User, App, Percentage, Start date, End date, Note.
 - Live validation: overlap conflicts blocking, >100% total as a warning
 - When changing an existing allocation, **"end current and create new"** is the default action; plain edit is available but visually secondary. This nudges toward preserving history
+- **Entry points — both sides of the relationship.** Allocating is reached from an app ("this app is short-staffed, who can I put on it") *and* from a person ("she is at 40%, what else can she take"). Both are real starting points and neither is primary, so App detail offers **Allocate someone** with the app fixed, and the person's Allocation tab offers **Add allocation** with the person fixed. Editing an existing row is reached from the row itself, on either screen
 
 ### 6.5 1:1 editor
 - Date, manager notes, their topics
@@ -600,6 +601,22 @@ export async function changeAllocation(input: ChangeInput): Promise<ActionResult
 better-sqlite3 is synchronous, so `db.transaction()` is a real transaction with no interleaving and no await points inside it. **This is the single strongest reason for choosing it** over the alternatives considered: the audit trail in §4.2 is only trustworthy if it cannot half-happen.
 
 The §4.3 overlap check runs *inside* the transaction rather than before it, so it cannot be invalidated between check and write.
+
+**One dialog, three modes.** `AllocationDialog` takes `mode: 'create' | 'change' | 'correct'` and renders the same fields against a different action, because the three are the same form with different history semantics and splitting them would let the three drift apart. `create` and `change` are what §6.4 nudges toward; `correct` is the escape hatch for a typo, and is the only one that mutates a row in place rather than adding to the trail.
+
+`create` is the only mode that needs the user and app lists, since `change` and `correct` operate on a row whose user and app are already fixed and not editable. The lists are read on the server and passed to the trigger button, so a page that only ever edits existing rows does not query them:
+
+```tsx
+// app detail — the app is fixed and already loaded, so only the free side is queried
+<NewAllocationButton
+  label="Allocate someone"
+  users={await getAllUsers()}
+  apps={[{ id: app.id, name: app.name }]}
+  defaultAppId={app.id}
+/>
+```
+
+The dialog prefills whichever side is fixed by the screen it was opened from (`defaultAppId` on app detail, `defaultUserId` on the person's Allocation tab) and locks that field, so the entry point cannot be contradicted by the form.
 
 ### 10.8 Domain layer
 
