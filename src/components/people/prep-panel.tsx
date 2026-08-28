@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
  * §5.2 — the agenda carry-over prep panel. "The mechanism that makes 1:1s
  * continuous rather than a series of disconnected conversations."
  *
- * Note the shape of the props: the Module A half (`allocations`, `changedSince`)
- * and the Module B half (`data`) arrive as SEPARATE inputs, fetched by separate
+ * Note the shape of the props: the allocation half (`allocations`, `changedSince`)
+ * and the people records half (`data`) arrive as SEPARATE inputs, fetched by separate
  * functions against separate databases and joined here in the component tree.
  * §10.6 forbids one function that reads both — such a function could not
  * survive people.db being absent, and would drag note content into anything
@@ -44,7 +44,7 @@ export function PrepPanel({
         </p>
       </div>
 
-      {/* Module A — allocation reality is usually half the substance of a 1:1. */}
+      {/* Allocation reality is usually half the substance of a 1:1. */}
       <Section icon={TrendingUp} title="Currently allocated">
         {allocations.length === 0 ? (
           <p className="text-status-unallocated text-[13px]">
@@ -77,7 +77,7 @@ export function PrepPanel({
         )}
       </Section>
 
-      {/* Module B — uncached, and absent entirely when people.db is missing. */}
+      {/* People records — uncached, and absent entirely when people.db is missing. */}
       {data.openActionItems.length > 0 && (
         <Section icon={CircleDot} title={`Open action items (${data.openActionItems.length})`}>
           <ul className="space-y-1.5">

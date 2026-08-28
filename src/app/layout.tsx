@@ -9,7 +9,7 @@ import "./globals.css";
  * §10.5 / §10.6 — nothing in this app may be prerendered at build time.
  *
  * Every page is a live view of a local database. A statically generated page
- * would serve allocation figures frozen at build time, and for Module B it
+ * would serve allocation figures frozen at build time, and for people records it
  * would additionally bake 1:1 note content into `.next/server/app/`, which is
  * exactly the second copy outside people.db that §9.2 forbids.
  *

@@ -110,7 +110,7 @@ export const appSchema = z.object({
   teamIds: z.array(id).default([]),
 });
 
-// ------------------------------------------------------------- Module B
+// ------------------------------------------------------------- people records
 
 export const oneOnOneSchema = z.object({
   id: id.optional(),

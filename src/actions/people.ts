@@ -21,7 +21,7 @@ import { addDays, today } from "@/domain/date.ts";
 import { fail, fromZod, ok, type ActionResult } from "./result.ts";
 
 /**
- * Module B mutations (§5).
+ * People-records mutations (§5).
  *
  * Every one of these begins by checking that people.db exists, because §9.2
  * makes its absence a supported state rather than an error. Nothing here caches
@@ -29,20 +29,20 @@ import { fail, fromZod, ok, type ActionResult } from "./result.ts";
  */
 function db() {
   const handle = getPeopleDb();
-  if (!handle) throw new ModuleBUnavailable();
+  if (!handle) throw new PeopleRecordsUnavailable();
   return handle;
 }
 
-class ModuleBUnavailable extends Error {}
+class PeopleRecordsUnavailable extends Error {}
 
 function guard<T>(fn: () => T): ActionResult<T> {
   try {
     return ok(fn());
   } catch (error) {
-    if (error instanceof ModuleBUnavailable) {
+    if (error instanceof PeopleRecordsUnavailable) {
       return fail("The people database is not present on this machine.");
     }
-    console.error("Module B action failed:", error);
+    console.error("people records action failed:", error);
     return fail("Something went wrong saving that.");
   }
 }
@@ -284,14 +284,14 @@ export interface DeletionTally {
 }
 
 /**
- * §9.5 — "Hard delete per user — a single action that removes all Module B
+ * §9.5 — "Hard delete per user — a single action that removes all people records
  * records for one person, permanently. NOT a soft-delete flag."
  *
  * One transaction, and it really is gone: there is no archive table, no
- * `deleted` column, and — because §10.6 keeps Module B out of every cache and
+ * `deleted` column, and — because §10.6 keeps people records out of every cache and
  * out of the build output — no copy anywhere else to sweep up afterwards.
  *
- * Their allocation history in Module A is untouched: §9.5 keeps it "for
+ * Their allocation history is untouched: §9.5 keeps it "for
  * capacity analysis" while the personal notes go.
  */
 export async function hardDeletePersonRecords(

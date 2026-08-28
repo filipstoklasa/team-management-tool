@@ -2,14 +2,13 @@
 
 Local-first allocation tracking and 1:1 management for engineering managers.
 
-The tool covers two halves of the job that are normally split across unrelated
-systems. **Allocation** answers who is working on what, at what percentage, as of
-any date — past, present or planned. **People** holds 1:1 records, goals and
-feedback per report. The connection between them is the point: preparing a 1:1
-surfaces what that person is actually allocated to, next to their goals and open
-action items.
+**Allocation** answers who is working on what, at what percentage, as of any
+date — past, present or planned. **People** holds 1:1 records, goals and feedback
+per report. These are one tool because they are one job: preparing a 1:1 surfaces
+what that person is actually allocated to, next to their goals and open action
+items, without leaving the screen or opening a second system.
 
-Everything runs on localhost against two SQLite files. No accounts, no cloud
+Everything runs on localhost against local SQLite storage. No accounts, no cloud
 services, no telemetry, and no outbound request carrying application data.
 
 ![Dashboard](docs/screenshots/dashboard.jpg)
@@ -145,8 +144,8 @@ scripts/        seed, backup, restore
 ```
 
 **Two databases, never joined in SQL.** `allocation.db` and `people.db` are
-separate files with no `ATTACH` and no cross-file foreign key. The People module
-stores `user_id` as a plain integer and the join happens in the component tree.
+separate files with no `ATTACH` and no cross-file foreign key. People records
+store `user_id` as a plain integer and the join happens in the component tree.
 That constraint is what makes the next property achievable rather than
 aspirational.
 
@@ -167,7 +166,7 @@ not worth keeping.
 
 ## Data handling
 
-The People module holds notes about identifiable individuals and is held to a
+People records hold notes about identifiable individuals and are held to a
 stricter standard than the rest of the application.
 
 - **Data does not leave the machine.** No cloud sync, no telemetry, and no AI API

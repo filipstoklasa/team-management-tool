@@ -8,20 +8,21 @@ wins — and the disagreement is a bug in one of them.
 
 ## The three rules that are easy to break
 
-**1. Two databases, never joined in SQL.** `allocation.db` (Module A) and
-`people.db` (Module B) are separate files. There is no `ATTACH` and no
-cross-file foreign key — Module B stores `user_id` as a plain integer, and that
-is the mechanism, not a compromise. Joins happen in the component tree.
+**1. Two databases, never joined in SQL.** `allocation.db` and `people.db` are
+separate files. There is no `ATTACH` and no cross-file foreign key — the people
+tables store `user_id` as a plain integer, and that is the mechanism, not a
+compromise. Joins happen in the component tree.
 
-**2. Module A must work with `people.db` absent.** This is §9.2 and it is
-testable, so test it: `mv data/people.db /tmp && npm run dev` — every route must
-still render and the dashboard must drop its Module B columns rather than show
-zeros. Reads go through `getPeopleDb()`, which returns `null` when the file is
-missing; `moduleBAvailable()` is the guard. Run this whenever you touch Module
-B. Move the `-wal` and `-shm` with it.
+**2. Allocation must work with `people.db` absent.** This is §9.2 and it is
+testable, so test it: `mv data/people.db /tmp && npm run dev` — every route
+must still render and the dashboard must drop its people-records columns rather
+than show zeros. Reads go through `getPeopleDb()`, which returns `null` when the
+file is missing; `peopleRecordsAvailable()` is the guard. Run this whenever you
+touch the people side. Move the `-wal` and `-shm` with it.
 
-**3. Module B content is never cached and never prerendered.** No `use cache`
-under `src/data/people.ts` or Module B components. The root layout sets
+**3. People-records content is never cached and never prerendered.** No
+`use cache` under `src/data/people.ts` or the people components. The root layout
+sets
 `export const dynamic = "force-dynamic"` so nothing is baked into the build
 output — a `○ (Static)` route in `next build` output is a bug.
 
@@ -44,14 +45,14 @@ output — a `○ (Static)` route in `next build` output is a bug.
   range, not just today — `src/domain/points-in-time.ts`, and it has the most
   test coverage in the repo for a reason.
 - **§6.6: entities deactivate, never delete.** Deleting a user would orphan the
-  allocation history the temporal model exists to protect. Module B deletion is
-  a separate, genuine hard delete (§9.5).
+  allocation history the temporal model exists to protect. People-records
+  deletion is a separate, genuine hard delete (§9.5).
 
 ## Local-only posture (§7)
 
 No cloud sync, no telemetry, no external call carrying app data, no AI API
-touching Module B content. In practice: telemetry is disabled in `.env`, there
-is a production CSP with `connect-src 'self'`, `next/font/google` is banned
+touching people-records content. In practice: telemetry is disabled in `.env`,
+there is a production CSP with `connect-src 'self'`, `next/font/google` is banned
 (build-time fetch — use the system stack), `drizzle-kit studio` is not
 installed, and both servers bind `127.0.0.1`.
 

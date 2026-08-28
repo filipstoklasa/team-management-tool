@@ -50,14 +50,14 @@ export interface DeactivationResult {
   userId: number;
   userName: string;
   /**
-   * §9.5 leavers: "when a user is deactivated in Module A, prompt to
-   * hard-delete their Module B records."
+   * §9.5 leavers: "when a user is deactivated on the allocation side, prompt to
+   * hard-delete their people records."
    *
    * A prompt, never a cascade. Their allocation history stays for capacity
    * analysis; the decision about their personal notes is made explicitly, as a
    * second action.
    */
-  promptModuleBDeletion: boolean;
+  promptPeopleRecordsDeletion: boolean;
 }
 
 export async function setUserActive(
@@ -76,7 +76,7 @@ export async function setUserActive(
     return ok({
       userId,
       userName: user.name,
-      promptModuleBDeletion: !active && peopleDbAvailable(),
+      promptPeopleRecordsDeletion: !active && peopleDbAvailable(),
     });
   } catch (error) {
     console.error("setUserActive failed:", error);

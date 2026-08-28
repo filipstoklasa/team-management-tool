@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * underallocated float to the top. Colour-coded under / full / over. Each row
  * also shows days since last 1:1."
  *
- * `daysSince` is Module B data and arrives separately. When people.db is absent
+ * `daysSince` comes from people records and arrives separately. When people.db is absent
  * it is simply an empty map and the column disappears — the panel does not
  * care, which is the point (§9.2).
  */
@@ -19,12 +19,12 @@ export function PeoplePanel({
   people,
   daysSince,
   openItems,
-  showModuleB,
+  showPeopleRecords,
 }: {
   people: PersonAllocation[];
   daysSince: Map<number, number>;
   openItems: Map<number, number>;
-  showModuleB: boolean;
+  showPeopleRecords: boolean;
 }) {
   if (people.length === 0) {
     return (
@@ -84,7 +84,7 @@ export function PeoplePanel({
                 {formatPercent(person.total)}
               </div>
 
-              {showModuleB ? (
+              {showPeopleRecords ? (
                 <div
                   className="text-muted-foreground tabular flex items-center justify-end gap-1 text-[11px]"
                   title={

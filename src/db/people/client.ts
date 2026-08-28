@@ -9,12 +9,12 @@ import * as schema from "./schema.ts";
 export type PeopleDb = ReturnType<typeof create>;
 
 /**
- * §9.2: "Module A must be fully usable and shareable with `people.db` absent."
+ * §9.2: "allocation must be fully usable and shareable with `people.db` absent."
  *
  * So this file is opened lazily and its absence is a normal, supported state —
- * never an error. Callers use `peopleDbAvailable()` and render a Module B
+ * never an error. Callers use `peopleDbAvailable()` and render a people-records
  * unavailable state rather than failing. This is what makes the separation
- * testable rather than aspirational: move people.db aside and Module A keeps
+ * testable rather than aspirational: move people.db aside and allocation keeps
  * working.
  *
  * `undefined` = not yet checked. `null` = checked, genuinely absent.

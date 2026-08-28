@@ -4,13 +4,13 @@
 
 A single tool for an engineering manager covering two connected halves of the job:
 
-**Module A — Allocation.** Who is working on what, at what percentage, as of any date: past, present, or planned future. Surfaces under- and over-allocation on both sides (people and apps).
+**Allocation.** Who is working on what, at what percentage, as of any date: past, present, or planned future. Surfaces under- and over-allocation on both sides (people and apps).
 
-**Module B — People.** 1:1 records, career progression, and feedback per report, with continuity across months.
+**People.** 1:1 records, career progression, and feedback per report, with continuity across months.
 
 The two are connected by design. When preparing a 1:1, the manager should see what that person is actually allocated to alongside their goals and recent conversations — allocation reality is usually half the substance of a 1:1.
 
-Both modules are in scope for v1. Module B has stricter data-handling requirements, specified in Section 9 as build requirements, not caveats.
+Both halves are in scope for v1. The people side has stricter data-handling requirements, specified in Section 9 as build requirements, not caveats.
 
 ---
 
@@ -32,7 +32,7 @@ Both modules are in scope for v1. Module B has stricter data-handling requiremen
 - Multi-user access, authentication, roles — this is a single-user tool
 - Integration with Jira, HRIS, calendar, or any external system
 - Notifications, email, scheduled reports
-- Any cloud sync or AI API call touching Module B content
+- Any cloud sync or AI API call touching people-records content
 
 ---
 
@@ -79,7 +79,7 @@ PRIMARY KEY (app_id, team_id)
 
 ---
 
-## 4. Module A — Allocation
+## 4. Allocation
 
 ### 4.1 Core table
 
@@ -150,7 +150,7 @@ Below → under-resourced · at → correctly staffed · above → over-resource
 
 ---
 
-## 5. Module B — People
+## 5. People
 
 ### 5.1 Tables
 
@@ -219,13 +219,13 @@ When opening a new 1:1 for a user, the app pre-populates a prep panel with:
 - All `ActionItem` rows for that user with `status = open`
 - Any `Feedback` rows with `shared = false` — things to pass on
 - `Goal` rows with `status = active` and no `GoalUpdate` in the last 60 days — quietly stalling
-- Their current allocation from Module A, and any allocation change since the last 1:1
+- Their current allocation, and any allocation change since the last 1:1
 
-That last item is the reason the two modules live in one app. "You moved from App X to App Y three weeks ago — how's that going?" is a better opening than "so, how are things?"
+That last item is the reason the two halves live in one app. "You moved from App X to App Y three weeks ago — how's that going?" is a better opening than "so, how are things?"
 
 ### 5.3 Retention
 
-Module B is a working tool, not a permanent record. See Section 9.5 — records older than a configurable retention window are surfaced for review and deletion rather than accumulating indefinitely.
+People records are a working tool, not a permanent record. See Section 9.5 — records older than a configurable retention window are surfaced for review and deletion rather than accumulating indefinitely.
 
 ---
 
@@ -276,7 +276,7 @@ Modal or page. User, App, Percentage, Start date, End date, Note.
 - Quick link to create a goal or log feedback without leaving the screen
 
 ### 6.6 Admin
-CRUD for Users, Teams, Apps. **Deactivate rather than delete** in Module A to preserve historical allocation integrity. Module B deletion is a separate hard-delete path — see 9.5.
+CRUD for Users, Teams, Apps. **Deactivate rather than delete** on the allocation side to preserve historical allocation integrity. Deletion of people records is a separate hard-delete path — see 9.5.
 
 ---
 
@@ -290,7 +290,7 @@ CRUD for Users, Teams, Apps. **Deactivate rather than delete** in Module A to pr
 
 ### Hard technical requirements
 - **Runs locally. No cloud sync, no telemetry, no external network calls carrying app data.**
-- **No AI API calls processing Module B content.** If AI assistance is wanted later (e.g. summarising notes), it must run against a local model or not at all. Module B content does not leave the machine.
+- **No AI API calls processing people-records content.** If AI assistance is wanted later (e.g. summarising notes), it must run against a local model or not at all. Note content does not leave the machine.
 - **Two separate SQLite files**: `allocation.db` and `people.db`. The app opens both; they join in application code on `user_id`, not across a shared database file. This means the allocation database can be demoed, screenshotted, or shared without the people data being present at all.
 
 ### Implementation notes
@@ -318,9 +318,9 @@ Steps 1–7 constitute a genuinely useful daily tool. Everything after is refine
 
 ---
 
-## 9. Data handling requirements — Module B
+## 9. Data handling requirements — people records
 
-Module B holds personal data about identifiable people, recorded in an employment context. That is a categorically different kind of data from anything in Module A, and it carries obligations that Module A does not: under data-protection law wherever the tool is run, and under whatever additional regime the operating organisation is subject to. Both are stricter for employment records than for most other data, and stricter again in regulated industries.
+People records hold personal data about identifiable people, recorded in an employment context. That is a categorically different kind of data from anything on the allocation side, and it carries obligations that allocation data does not: under data-protection law wherever the tool is run, and under whatever additional regime the operating organisation is subject to. Both are stricter for employment records than for most other data, and stricter again in regulated industries.
 
 The following are build requirements, not suggestions.
 
@@ -328,7 +328,7 @@ The following are build requirements, not suggestions.
 Storage is a local SQLite file on an encrypted disk. No cloud backup service, no sync, no third-party processing of note content. This is what makes a self-built tool defensible where a hosted one would not be.
 
 ### 9.2 Separation
-Separate database files, separate screens, separate export paths. Module A must be fully usable and shareable with `people.db` absent.
+Separate database files, separate screens, separate export paths. Allocation must be fully usable and shareable with `people.db` absent.
 
 ### 9.3 What gets recorded
 Suitable: development goals, skill growth areas, project ownership interests, delivery observations, factual summaries of what was discussed.
@@ -344,12 +344,12 @@ This tool is a personal working aid. It is not, and must not present itself as, 
 
 Where a sanctioned HR system exists, that system is authoritative for anything formal — performance management, disciplinary matters, compensation — and this tool defers to it rather than duplicating it. §9.3 draws the same line at the level of individual notes; this is the same rule stated about the tool as a whole.
 
-The architecture is built so that an organisation's answer about keeping people-management records outside a sanctioned system can be honoured either way: Module B is a separate database that can be omitted entirely, leaving Module A fully functional (§9.2). Allocation planning does not depend on any of this.
+The architecture is built so that an organisation's answer about keeping people-management records outside a sanctioned system can be honoured either way: people records live in a separate database that can be omitted entirely, leaving allocation fully functional (§9.2). Allocation planning does not depend on any of this.
 
 ### 9.5 Deletion and retention
-- **Hard delete per user** — a single action that removes all Module B records for one person, permanently. Not a soft-delete flag. Build this in step 7, not as an afterthought
+- **Hard delete per user** — a single action that removes all people records for one person, permanently. Not a soft-delete flag. Build this in step 7, not as an afterthought
 - **Retention review** — a screen listing records older than a configurable window (default 24 months) with bulk delete. The default posture is that old 1:1 notes get deleted, not archived
-- **Leavers** — when a user is deactivated in Module A, prompt to hard-delete their Module B records. Their allocation history stays for capacity analysis; their personal notes do not need to
+- **Leavers** — when a user is deactivated on the allocation side, prompt to hard-delete their people records. Their allocation history stays for capacity analysis; their personal notes do not need to
 
 ---
 
@@ -407,12 +407,14 @@ team-management-tool/
     │   │   ├── feedback/
     │   │   └── allocation/
     │   ├── apps/[appId]/page.tsx      §6.3
-    │   ├── admin/                     §6.6
-    │   └── retention/page.tsx         §9.5
+    │   └── admin/                     §6.6
+    │       ├── layout.tsx             section heading + tabs
+    │       ├── page.tsx               users, teams, apps
+    │       └── retention/page.tsx     §9.5
     ├── components/
     │   ├── ui/                        shadcn primitives
-    │   ├── allocation/                Module A components
-    │   └── people/                    Module B components
+    │   ├── allocation/                allocation components
+    │   └── people/                    people-records components
     ├── db/
     │   ├── allocation/{schema.ts,client.ts}
     │   └── people/{schema.ts,client.ts}
@@ -436,7 +438,7 @@ The `db → data → app` direction is one-way. Route files never import from `s
 Implements §7 and §9.2.
 
 - **Separate everything.** Two Drizzle instances, two connections, two migration folders, two `drizzle.config` files. Nothing is shared but the `user_id` value.
-- **No SQLite `ATTACH`.** §7 requires the join to happen in application code. A consequence worth stating plainly: Module B tables store `user_id` as a plain `integer` with **no foreign key**, because a cross-file foreign key is impossible. That is not a compromise — it is the mechanism.
+- **No SQLite `ATTACH`.** §7 requires the join to happen in application code. A consequence worth stating plainly: the people tables store `user_id` as a plain `integer` with **no foreign key**, because a cross-file foreign key is impossible. That is not a compromise — it is the mechanism.
 - **`people.db` opens lazily and is allowed to be absent.**
 
 ```ts
@@ -453,7 +455,7 @@ export function getPeopleDb(): PeopleDb | null {
 export const peopleDbAvailable = () => getPeopleDb() !== null
 ```
 
-Every Module B read returns an explicit "unavailable" result when the file is missing, rather than throwing. Module B routes render an unavailable state; the dashboard drops its Module B columns (§10.5). This turns §9.2 from a claim into something with an acceptance test: **move `people.db` aside and the whole of Module A still works.**
+Every people-records read returns an explicit "unavailable" result when the file is missing, rather than throwing. Those routes render an unavailable state; the dashboard drops its people-records columns (§10.5). This turns §9.2 from a claim into something with an acceptance test: **move `people.db` aside and the whole of allocation still works.**
 
 - **Import guard.** ESLint `no-restricted-imports` prevents anything under `src/db/allocation/`, `src/data/allocation.ts` or `src/data/entities.ts` from importing `src/db/people` or `src/data/people`. The separation cannot erode by accident during a refactor.
 
@@ -504,7 +506,7 @@ Server Components read `src/data/*` directly. **There is no cache layer**, and t
 An earlier draft of this section was built on Next.js 16.3's Instant Navigations (`cacheComponents` + `partialPrefetching`). It was removed. The reasoning is recorded here so it is not reintroduced by reflex:
 
 - That feature exists to hide **server and network latency** — a round trip to a datacentre, a query against a remote database, a cold serverless function. This app has none of those. It runs on loopback against a SQLite file opened in the same process, where reading the entire allocation table costs well under a millisecond. The latency it removes is latency this app never had.
-- The cost was real: a cache-tag taxonomy to keep correct, an `updateTag`-versus-`revalidateTag` judgement on every mutation, a dev-overlay validation loop to satisfy on every route, and — worst — a caching layer that actively wanted to write Module B note content into `.next/cache`, which then needed a carve-out to keep §9.2 true.
+- The cost was real: a cache-tag taxonomy to keep correct, an `updateTag`-versus-`revalidateTag` judgement on every mutation, a dev-overlay validation loop to satisfy on every route, and — worst — a caching layer that actively wanted to write note content into `.next/cache`, which then needed a carve-out to keep §9.2 true.
 - Removing it deletes that entire class of problem. Navigation stays fast, because the work it was hiding was already fast.
 
 What the framework configuration now contains is close to nothing — but one line is load-bearing and must not be lost:
@@ -521,7 +523,7 @@ const nextConfig: NextConfig = {
 
 **Rendering model.**
 
-- Every route is server-rendered per request. Module A routes are dynamic by nature — they read `searchParams` or `params` and query the database on each request — and `revalidatePath` after a mutation keeps them honest. Module B routes additionally declare `export const dynamic = 'force-dynamic'`, for the reason given in §10.6.
+- Every route is server-rendered per request. Allocation routes are dynamic by nature — they read `searchParams` or `params` and query the database on each request — and `revalidatePath` after a mutation keeps them honest. People-records routes additionally declare `export const dynamic = 'force-dynamic'`, for the reason given in §10.6.
 - **`loading.tsx` at each route segment** gives an immediate skeleton on navigation. `<Link>`'s default `prefetch` behaviour for a dynamic route is to fetch the partial route down to the nearest `loading.tsx` boundary, so the skeleton is already in the client when you click. This is the ordinary App Router pattern and needs no configuration.
 - **Prefetching only runs in production builds.** `next dev` does not prefetch at all, so navigation will feel slower while developing than it does in use. This is a property of the dev server, not of the app — do not "fix" it. It is also the reason daily use should be `npm run build && npm run start` rather than leaving `next dev` running (§10.10).
 - `<Suspense>` is used *inside* a page where one panel is meaningfully slower than its siblings, so the fast panels are not held up waiting. Here it is a layout tool, chosen where it helps, not an obligation imposed by a framework flag.
@@ -543,29 +545,29 @@ The prev/next period arrows are plain `<Link>`s; the free-form picker uses `rout
 
 **Person view (§6.2) still uses one route per tab** under a shared `layout.tsx`. The justification is no longer prefetching — it is that a tab should be linkable, survive a refresh, and appear in browser history. That reason stands on its own and is the reason the decision survives the simplification.
 
-**Dashboard rows carry Module B data**, which is where §10.3 and §10.5 meet. "Days since last 1:1" per person, and the overdue-1:1 and open-action-item counts in the summary strip, all read `people.db`. They sit in their own `<Suspense>` boundary so that the allocation panels never wait on them, never fail because of them, and simply render without those columns when `people.db` is absent.
+**Dashboard rows carry people-records data**, which is where §10.3 and §10.5 meet. "Days since last 1:1" per person, and the overdue-1:1 and open-action-item counts in the summary strip, all read `people.db`. They sit in their own `<Suspense>` boundary so that the allocation panels never wait on them, never fail because of them, and simply render without those columns when `people.db` is absent.
 
 **After a mutation**, the server action calls `revalidatePath` for the affected routes (§10.7). With no data cache in play, this does one job only: clearing the client-side Router Cache so a back-navigation cannot show a payload that predates the edit.
 
-### 10.6 Keeping Module B out of the build output
+### 10.6 Keeping people-records content out of the build output
 
 §9.2 requires that `allocation.db` can be handed over, demoed or screenshotted with `people.db` simply absent. That holds only if note text lives in `people.db` and nowhere else.
 
 Dropping the cache layer (§10.5) removes the main threat outright: with no `'use cache'`, nothing is written to `.next/cache` at all. One residual path remains — **build-time prerendering**, which would bake rendered note content into `.next/server/app/`. It is closed explicitly rather than left to inference about what Next.js will decide to prerender:
 
 ```ts
-// every Module B route segment
+// every people-records route segment
 export const dynamic = 'force-dynamic'
 ```
 
 Rules that follow:
 
-- No `'use cache'`, no `unstable_cache`, and no `generateStaticParams` under `src/data/people.ts`, `src/components/people/`, or any Module B route. An ESLint `no-restricted-syntax` rule enforces this, so it cannot arrive later as a well-meaning performance tweak.
+- No `'use cache'`, no `unstable_cache`, and no `generateStaticParams` under `src/data/people.ts`, `src/components/people/`, or any people-records route. An ESLint `no-restricted-syntax` rule enforces this, so it cannot arrive later as a well-meaning performance tweak.
 - The §9.5 hard-delete is genuinely complete: deleting the rows from `people.db` deletes the data, with no cache entry and no prerendered artefact left to sweep up afterwards.
-- Module B content never appears in a build output that could be committed, copied or shared.
-- **§9.5's leaver flow crosses the module boundary, so it is specified here.** Deactivating a user is a Module A write and must never cascade into Module B automatically: allocation history is retained for capacity analysis, while personal notes are not. `deactivateUser()` therefore writes only to `allocation.db`, then — if `peopleDbAvailable()` — returns a flag that prompts a *separate, explicitly confirmed* hard delete of that user's Module B records. Two actions, two confirmations, never one cascading write.
+- Note content never appears in a build output that could be committed, copied or shared.
+- **§9.5's leaver flow crosses the boundary between the two, so it is specified here.** Deactivating a user is an allocation write and must never cascade into the people records automatically: allocation history is retained for capacity analysis, while personal notes are not. `deactivateUser()` therefore writes only to `allocation.db`, then — if `peopleDbAvailable()` — returns a flag that prompts a *separate, explicitly confirmed* hard delete of that user's people records. Two actions, two confirmations, never one cascading write.
 
-**The §5.2 prep panel is where the separation gets tested.** That panel is the whole reason the two modules share an application, and it deliberately mixes them: current allocation and recent allocation changes come from Module A, while open action items, unshared feedback and stalling goals come from Module B. It is assembled from two independent reads in the component tree, never from one function that queries both databases. That keeps the Module A half rendering normally when `people.db` is absent, and keeps a single failure in Module B from taking the panel down.
+**The §5.2 prep panel is where the separation gets tested.** That panel is the whole reason the two halves share an application, and it deliberately mixes them: current allocation and recent allocation changes come from `allocation.db`, while open action items, unshared feedback and stalling goals come from `people.db`. It is assembled from two independent reads in the component tree, never from one function that queries both databases. That keeps the allocation half rendering normally when `people.db` is absent, and keeps a single failure on the people side from taking the panel down.
 
 **§9.3's guidance is a component, not a notice.** The requirement is persistent helper text in the 1:1 editor, explicitly *not* a dismissible one-time notice. It is implemented as a static, always-rendered panel in the editor layout with no dismiss control and no persisted "seen" state — there is nothing to dismiss and nothing to remember. It is part of the page, so it is present before any note content loads.
 
@@ -654,7 +656,7 @@ Putting these in a pure layer means the hardest logic in the app is testable wit
 | No build-time fetches | No `next/font/google` — system font stack. No remote images |
 | No remote cache | There is no cache layer (§10.5). No `'use cache'`, no remote cache handler, nothing written to `.next/cache` |
 | No third-party DB UI | `drizzle-kit studio` is **not installed**. Its browser UI is served from `local.drizzle.studio`; the data connection stays on localhost, but a third-party page that can talk to `people.db` is not a risk worth taking for convenience |
-| No AI on Module B | §7's rule stands. No API client is present in the dependency tree to make it possible |
+| No AI on people records | §7's rule stands. No API client is present in the dependency tree to make it possible |
 
 Seed data uses fictional names only, per §7.
 
@@ -678,7 +680,7 @@ Mapping §8's build order onto this architecture:
 | §8 step | Lands in | Notes |
 |---|---|---|
 | 1. Schema, migrations, seed | `src/db/**`, `drizzle/**`, `scripts/seed.ts` | Both databases. Fictional names |
-| 2. Entity CRUD | `src/actions/entities.ts`, `src/app/admin/` | Reads live in `src/data/allocation.ts` — users, teams and apps are Module A tables. Deactivate, never delete (§6.6) |
+| 2. Entity CRUD | `src/actions/entities.ts`, `src/app/admin/` | Reads live in `src/data/allocation.ts` — users, teams and apps are allocation tables. Deactivate, never delete (§6.6) |
 | 3. Allocation create/edit | `src/actions/allocation.ts`, `src/domain/intervals.ts` | The §10.7 transaction |
 | 4. "As of D" + metrics | `src/data/allocation.ts`, `src/domain/metrics.ts` | The §4.2 core query |
 | 5. Dashboard | `src/app/page.tsx` | The §10.5 Suspense split |
@@ -686,11 +688,11 @@ Mapping §8's build order onto this architecture:
 | 7. 1:1s + carry-over | `src/data/people.ts`, `src/app/people/[userId]/one-on-ones/` | §10.6 applies from the first line. Hard-delete (§9.5) built here, not later |
 | 8. Goals and feedback | `src/components/people/` | |
 | 9. App detail + chart | `src/app/apps/[appId]/` | shadcn `chart` |
-| 10. Audit, retention, polish | `src/app/retention/`, `src/components/allocation/change-history.tsx`, `src/app/**/loading.tsx` | §9.5 retention review; §4.2 audit trail surfaced on the person and app views |
+| 10. Audit, retention, polish | `src/app/admin/retention/`, `src/components/allocation/change-history.tsx`, `src/app/**/loading.tsx` | §9.5 retention review; §4.2 audit trail surfaced on the person and app views |
 
 **Acceptance checks for the development phase:**
 
 - `npx next telemetry status` reports disabled
 - `node --test` passes — especially the half-open boundary and per-point-in-time cases
 - Every route has a `loading.tsx`, and navigation shows that skeleton rather than a blank or frozen page
-- `mv data/people.db /tmp && npm run dev` — **Module A remains fully usable with people data absent.** This is the §9.2 acceptance test, and it should be run whenever Module B is touched
+- `mv data/people.db /tmp && npm run dev` — **allocation remains fully usable with people data absent.** This is the §9.2 acceptance test, and it should be run whenever the people side is touched

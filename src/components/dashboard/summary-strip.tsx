@@ -9,7 +9,7 @@ export interface Stat {
 
 /**
  * Static classes, because Tailwind cannot see an interpolated one. The strip
- * has three stats without Module B and five with it, so only those widths and
+ * has three stats without people records and five with them, so only those widths and
  * the one in between can occur — and an empty grid cell would read as a missing
  * number rather than as an absent module.
  */
@@ -23,7 +23,7 @@ const columns: Record<number, string> = {
  * §6.1 — "Summary strip — counts: underallocated people, under-resourced apps,
  * unallocated people, overdue 1:1s, open action items."
  *
- * The last two are Module B and are simply omitted when people.db is absent
+ * The last two come from people records and are simply omitted when people.db is absent
  * rather than shown as zero, which would be a lie.
  */
 export function SummaryStrip({ stats }: { stats: Stat[] }) {

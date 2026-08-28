@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PersonTabs } from "@/components/people/person-tabs";
 import { getPeopleAllocation, getUser } from "@/data/allocation.ts";
-import { moduleBAvailable } from "@/data/people.ts";
+import { peopleRecordsAvailable } from "@/data/people.ts";
 import { formatIsoDate, today } from "@/domain/date.ts";
 import { formatPercent, personStatusMeta } from "@/lib/status.ts";
 import { cn } from "@/lib/utils";
@@ -39,7 +39,7 @@ export default async function PersonLayout({
         <PersonHeader userId={id} />
       </Suspense>
 
-      <PersonTabs userId={id} moduleBAvailable={moduleBAvailable()} />
+      <PersonTabs userId={id} peopleRecordsAvailable={peopleRecordsAvailable()} />
 
       {children}
     </div>
