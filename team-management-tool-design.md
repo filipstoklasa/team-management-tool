@@ -407,8 +407,10 @@ team-management-tool/
     │   │   ├── feedback/
     │   │   └── allocation/
     │   ├── apps/[appId]/page.tsx      §6.3
-    │   ├── admin/                     §6.6
-    │   └── retention/page.tsx         §9.5
+    │   └── admin/                     §6.6
+    │       ├── layout.tsx             section heading + tabs
+    │       ├── page.tsx               users, teams, apps
+    │       └── retention/page.tsx     §9.5
     ├── components/
     │   ├── ui/                        shadcn primitives
     │   ├── allocation/                Module A components
@@ -686,7 +688,7 @@ Mapping §8's build order onto this architecture:
 | 7. 1:1s + carry-over | `src/data/people.ts`, `src/app/people/[userId]/one-on-ones/` | §10.6 applies from the first line. Hard-delete (§9.5) built here, not later |
 | 8. Goals and feedback | `src/components/people/` | |
 | 9. App detail + chart | `src/app/apps/[appId]/` | shadcn `chart` |
-| 10. Audit, retention, polish | `src/app/retention/`, `src/components/allocation/change-history.tsx`, `src/app/**/loading.tsx` | §9.5 retention review; §4.2 audit trail surfaced on the person and app views |
+| 10. Audit, retention, polish | `src/app/admin/retention/`, `src/components/allocation/change-history.tsx`, `src/app/**/loading.tsx` | §9.5 retention review; §4.2 audit trail surfaced on the person and app views |
 
 **Acceptance checks for the development phase:**
 

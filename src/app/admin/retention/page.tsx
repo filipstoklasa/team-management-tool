@@ -19,7 +19,7 @@ const DEFAULT_MONTHS = 24;
  */
 export default async function RetentionPage({
   searchParams,
-}: PageProps<"/retention">) {
+}: PageProps<"/admin/retention">) {
   const params = await searchParams;
   const raw = Number(Array.isArray(params.months) ? params.months[0] : params.months);
   const months =
@@ -29,13 +29,11 @@ export default async function RetentionPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Retention review</h1>
-        <p className="text-muted-foreground max-w-2xl text-sm">
-          Module B is a working tool, not a permanent record. Old 1:1 notes and feedback
-          are deleted, not archived. Allocation history is never touched by this screen.
-        </p>
-      </div>
+      <p className="text-muted-foreground max-w-2xl text-sm">
+        People records are a working tool, not a permanent record. Old 1:1 notes and
+        feedback are deleted, not archived. Allocation history is never touched by this
+        screen.
+      </p>
 
       {candidates === null ? (
         <ModuleBUnavailable />

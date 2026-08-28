@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarClock, LayoutGrid, Settings, Shredder, Users } from "lucide-react";
+import { CalendarClock, LayoutGrid, Settings, Users } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
@@ -10,8 +10,9 @@ const links = [
   { href: "/", label: "Dashboard", icon: LayoutGrid, exact: true },
   { href: "/people", label: "People", icon: Users },
   { href: "/apps", label: "Apps", icon: CalendarClock },
+  // Retention lives inside Admin (§9.5 is a records-keeping job, not a separate
+  // product area), so it is reached by its tab rather than a fifth nav entry.
   { href: "/admin", label: "Admin", icon: Settings },
-  { href: "/retention", label: "Retention", icon: Shredder },
 ];
 
 export function MainNav() {

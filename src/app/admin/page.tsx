@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { AdminPanels } from "@/components/admin/admin-panels";
 import {
   getAllApps,
@@ -8,7 +6,6 @@ import {
   getTeamIdsByApp,
   getTeamIdsByUser,
 } from "@/data/allocation.ts";
-import { moduleBAvailable } from "@/data/people.ts";
 
 /**
  * §6.6 Admin. Everything here reads from Module A only — the panels never touch
@@ -27,24 +24,10 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
-          <p className="text-muted-foreground text-sm">
-            People, apps and teams. Entities are deactivated, never deleted, so the
-            allocation history that references them stays intact.
-          </p>
-        </div>
-        {moduleBAvailable() && (
-          <Link
-            href="/retention"
-            className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors"
-          >
-            Retention review
-            <ArrowRight className="size-3.5" />
-          </Link>
-        )}
-      </div>
+      <p className="text-muted-foreground text-sm">
+        Entities are deactivated, never deleted, so the allocation history that
+        references them stays intact.
+      </p>
 
       <AdminPanels
         users={users.map((user) => ({ ...user, teamIds: userTeamIds.get(user.id) ?? [] }))}
