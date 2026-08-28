@@ -369,7 +369,7 @@ Section 7 offered options. This section decides them. Where the two differ, **Se
 ### 10.2 Repository layout
 
 ```
-moodys-team-management/
+team-management-tool/
 ├── team-management-tool-design.md
 ├── next.config.ts
 ├── components.json                    shadcn config
