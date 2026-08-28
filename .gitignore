@@ -2,8 +2,8 @@
 node_modules/
 
 # Next.js build output
-.next/
-out/
+/.next/
+/out/
 next-env.d.ts
 *.tsbuildinfo
 
@@ -11,24 +11,26 @@ next-env.d.ts
 .env*
 !.env.example
 
-# Databases — never commit (§7, §9.2)
+# Databases — never commit (§7, §9.2).
+# Anchored with a leading slash: an unanchored `data/` also matches src/data/,
+# which silently kept the entire read layer out of the repository.
 # people.db holds personal data about identifiable employees.
 # allocation.db is excluded too: it is generated from migrations + seed.
-data/
+/data/
 *.db
 *.db-wal
 *.db-shm
 *.sqlite
 
 # Exports (§9.2 — separate export paths)
-exports/
+/exports/
 
 # Database backups — same rule as data/ (§7, §9.2)
-backup/
+/backup/
 
 # Tests
-playwright-report/
-test-results/
+/playwright-report/
+/test-results/
 
 # OS / editor
 .DS_Store
