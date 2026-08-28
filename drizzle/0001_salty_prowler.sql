@@ -8,6 +8,7 @@ CREATE TABLE `action_items` (
 	`due_date` text,
 	`created_at` integer NOT NULL,
 	`closed_at` integer,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`one_on_one_id`) REFERENCES `one_on_ones`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
@@ -20,7 +21,8 @@ CREATE TABLE `feedback` (
 	`source` text,
 	`category` text NOT NULL,
 	`content` text NOT NULL,
-	`shared` integer DEFAULT false NOT NULL
+	`shared` integer DEFAULT false NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE INDEX `feedback_user_shared` ON `feedback` (`user_id`,`shared`);--> statement-breakpoint
@@ -42,7 +44,8 @@ CREATE TABLE `goals` (
 	`status` text DEFAULT 'active' NOT NULL,
 	`target_date` text,
 	`created_at` integer NOT NULL,
-	`updated_at` integer NOT NULL
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE INDEX `goal_user_status` ON `goals` (`user_id`,`status`);--> statement-breakpoint
@@ -53,7 +56,8 @@ CREATE TABLE `one_on_ones` (
 	`manager_notes` text,
 	`their_topics` text,
 	`created_at` integer NOT NULL,
-	`updated_at` integer NOT NULL
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE INDEX `one_on_one_user_date` ON `one_on_ones` (`user_id`,`date`);

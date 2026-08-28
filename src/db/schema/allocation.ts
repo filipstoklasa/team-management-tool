@@ -11,11 +11,9 @@ import {
 import type { IsoDate } from "../../domain/date.ts";
 
 /**
- * allocation.db — allocations, users, teams and apps (§3, §4).
+ * Allocations, users, teams and apps (§3, §4).
  *
- * This database contains no personal notes and is safe to demo, screenshot or
- * hand over on its own (§9.2). People records live in a separate file with no
- * foreign keys pointing here.
+ * `users` is the root the people tables reference — see ./people.ts.
  */
 
 export const users = sqliteTable("users", {

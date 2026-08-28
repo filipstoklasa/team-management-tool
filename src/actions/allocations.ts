@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { and, eq, ne } from "drizzle-orm";
-import { allocationDb } from "@/db/allocation/client.ts";
+import { db } from "@/db/client.ts";
 import {
   allocationChanges,
   allocations,
   type Allocation,
-} from "@/db/allocation/schema.ts";
+} from "@/db/schema/allocation.ts";
 import { formatIsoDate, maxDate, minDate, type IsoDate } from "@/domain/date.ts";
 import { overlaps, type DateRange } from "@/domain/intervals.ts";
 import { overAllocatedSegments } from "@/domain/points-in-time.ts";
@@ -23,7 +23,7 @@ import { fail, fromZod, ok, type ActionResult, type Warning } from "./result.ts"
  * The handle Drizzle hands to a transaction callback — narrower than the db
  * itself. Derived from the callback signature so it cannot drift.
  */
-type Tx = Parameters<Parameters<typeof allocationDb.transaction>[0]>[0];
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 const range = (r: { startDate: IsoDate; endDate: IsoDate | null }): DateRange => ({
   start: r.startDate,
@@ -111,7 +111,7 @@ export async function createAllocation(
   const v = parsed.data;
 
   try {
-    const result = allocationDb.transaction((tx) => {
+    const result = db.transaction((tx) => {
       const conflicts = findOverlaps(tx, v.userId, v.appId, {
         start: v.startDate,
         end: v.endDate,
@@ -178,7 +178,7 @@ export async function changeAllocation(
   const v = parsed.data;
 
   try {
-    const result = allocationDb.transaction((tx) => {
+    const result = db.transaction((tx) => {
       const current = tx
         .select()
         .from(allocations)
@@ -272,7 +272,7 @@ export async function correctAllocation(
   const v = parsed.data;
 
   try {
-    const result = allocationDb.transaction((tx) => {
+    const result = db.transaction((tx) => {
       const current = tx
         .select()
         .from(allocations)
@@ -340,7 +340,7 @@ export async function endAllocation(
   const v = parsed.data;
 
   try {
-    const result = allocationDb.transaction((tx) => {
+    const result = db.transaction((tx) => {
       const current = tx
         .select()
         .from(allocations)

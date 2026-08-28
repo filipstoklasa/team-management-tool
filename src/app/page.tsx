@@ -15,9 +15,13 @@ import {
   getDaysSinceLastOneOnOne,
   getOpenActionItemCount,
   getPeopleSummary,
-  peopleRecordsAvailable,
 } from "@/data/people.ts";
-import { formatIsoDate, parseIsoDate, today, type IsoDate } from "@/domain/date.ts";
+import {
+  formatIsoDate,
+  parseIsoDate,
+  today,
+  type IsoDate,
+} from "@/domain/date.ts";
 import { OVERDUE_1ON1_DAYS } from "@/lib/status.ts";
 
 /**
@@ -48,7 +52,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
         </div>
       </div>
 
-      <Suspense key={`summary-${date}-${teamIds}`} fallback={<Skeleton className="h-[76px] w-full rounded-lg" />}>
+      <Suspense
+        key={`summary-${date}-${teamIds}`}
+        fallback={<Skeleton className="h-[76px] w-full rounded-lg" />}
+      >
         <Summary date={date} teamIds={teamIds} />
       </Suspense>
 
@@ -63,7 +70,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Suspense key={`people-${date}-${teamIds}`} fallback={<PanelSkeleton />}>
+            <Suspense
+              key={`people-${date}-${teamIds}`}
+              fallback={<PanelSkeleton />}
+            >
               <People date={date} teamIds={teamIds} />
             </Suspense>
           </CardContent>
@@ -79,7 +89,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Suspense key={`apps-${date}-${teamIds}`} fallback={<PanelSkeleton />}>
+            <Suspense
+              key={`apps-${date}-${teamIds}`}
+              fallback={<PanelSkeleton />}
+            >
               <Apps date={date} teamIds={teamIds} />
             </Suspense>
           </CardContent>
@@ -89,7 +102,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   );
 }
 
-async function Summary({ date, teamIds }: { date: IsoDate; teamIds: number[] }) {
+async function Summary({
+  date,
+  teamIds,
+}: {
+  date: IsoDate;
+  teamIds: number[];
+}) {
   const [people, apps, peopleSummary] = await Promise.all([
     getPeopleAllocation(date, teamIds),
     getAppsAllocation(date, teamIds),
@@ -115,30 +134,27 @@ async function Summary({ date, teamIds }: { date: IsoDate; teamIds: number[] }) 
     },
   ];
 
-  // People-records contributions — omitted entirely when people.db is absent (§9.2).
-  if (peopleSummary) {
-    // The join happens here, not in a data function: "overdue" needs the active
-    // roster from allocation and the last-1:1 dates from people records. Someone who has
-    // never had a 1:1 counts as overdue — they are the ones most easily missed.
-    const overdue = people.filter((p) => {
-      const since = peopleSummary.daysSinceLastOneOnOne.get(p.user.id);
-      return since === undefined || since > OVERDUE_1ON1_DAYS;
-    }).length;
+  // "Overdue" needs both halves: the active roster, and the last-1:1 dates.
+  // Someone who has never had a 1:1 counts as overdue — they are the ones most
+  // easily missed.
+  const overdue = people.filter((p) => {
+    const since = peopleSummary.daysSinceLastOneOnOne.get(p.user.id);
+    return since === undefined || since > OVERDUE_1ON1_DAYS;
+  }).length;
 
-    stats.push(
-      {
-        label: "Overdue 1:1s",
-        value: overdue,
-        tone: "warn",
-        hint: `No 1:1 in over ${OVERDUE_1ON1_DAYS} days, or none ever recorded`,
-      },
-      {
-        label: "Open action items",
-        value: peopleSummary.openActionItems,
-        tone: "neutral",
-      },
-    );
-  }
+  stats.push(
+    {
+      label: "Overdue 1:1s",
+      value: overdue,
+      tone: "warn",
+      hint: `No 1:1 in over ${OVERDUE_1ON1_DAYS} days, or none ever recorded`,
+    },
+    {
+      label: "Open action items",
+      value: peopleSummary.openActionItems,
+      tone: "neutral",
+    },
+  );
 
   return <SummaryStrip stats={stats} />;
 }
@@ -150,12 +166,7 @@ async function People({ date, teamIds }: { date: IsoDate; teamIds: number[] }) {
     getOpenActionItemCount(),
   ]);
   return (
-    <PeoplePanel
-      people={people}
-      daysSince={daysSince}
-      openItems={openItems}
-      showPeopleRecords={peopleRecordsAvailable()}
-    />
+    <PeoplePanel people={people} daysSince={daysSince} openItems={openItems} />
   );
 }
 

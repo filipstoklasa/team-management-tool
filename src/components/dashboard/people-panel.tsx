@@ -3,7 +3,11 @@ import { CircleAlert, MessageSquareOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AllocationBar } from "@/components/allocation-bar";
 import type { PersonAllocation } from "@/data/allocation.ts";
-import { OVERDUE_1ON1_DAYS, formatPercent, personStatusMeta } from "@/lib/status.ts";
+import {
+  OVERDUE_1ON1_DAYS,
+  formatPercent,
+  personStatusMeta,
+} from "@/lib/status.ts";
 import { cn } from "@/lib/utils";
 
 /**
@@ -19,12 +23,10 @@ export function PeoplePanel({
   people,
   daysSince,
   openItems,
-  showPeopleRecords,
 }: {
   people: PersonAllocation[];
   daysSince: Map<number, number>;
   openItems: Map<number, number>;
-  showPeopleRecords: boolean;
 }) {
   if (people.length === 0) {
     return (
@@ -49,7 +51,9 @@ export function PeoplePanel({
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="truncate text-sm font-medium">{person.user.name}</span>
+                  <span className="truncate text-sm font-medium">
+                    {person.user.name}
+                  </span>
                   {person.status === "unallocated" && (
                     <CircleAlert className="text-status-unallocated size-3.5 shrink-0" />
                   )}
@@ -57,7 +61,9 @@ export function PeoplePanel({
                 <div className="text-muted-foreground truncate text-xs">
                   {person.user.title ?? "—"}
                   {person.teams.length > 0 && (
-                    <span className="ml-1.5">· {person.teams.map((t) => t.name).join(", ")}</span>
+                    <span className="ml-1.5">
+                      · {person.teams.map((t) => t.name).join(", ")}
+                    </span>
                   )}
                 </div>
               </div>
@@ -75,46 +81,57 @@ export function PeoplePanel({
                   {person.allocations.length === 0
                     ? "No allocations"
                     : person.allocations
-                        .map((a) => `${a.appName} ${formatPercent(a.percentage)}`)
+                        .map(
+                          (a) => `${a.appName} ${formatPercent(a.percentage)}`,
+                        )
                         .join(" · ")}
                 </div>
               </div>
 
-              <div className={cn("tabular text-right text-sm font-semibold", meta.text)}>
+              <div
+                className={cn(
+                  "tabular text-right text-sm font-semibold",
+                  meta.text,
+                )}
+              >
                 {formatPercent(person.total)}
               </div>
 
-              {showPeopleRecords ? (
-                <div
-                  className="text-muted-foreground tabular flex items-center justify-end gap-1 text-[11px]"
-                  title={
-                    since === undefined
-                      ? "No 1:1 ever recorded"
-                      : `Last 1:1 ${since} days ago`
-                  }
-                >
-                  {since === undefined ? (
-                    <span className="text-status-under flex items-center gap-0.5 font-medium">
-                      <MessageSquareOff className="size-3" />
-                      never
-                    </span>
-                  ) : (
-                    <span className={cn(since > OVERDUE_1ON1_DAYS && "text-status-under font-medium")}>
-                      {since}d
-                    </span>
-                  )}
-                  {open > 0 && (
-                    <span className="bg-secondary text-secondary-foreground rounded px-1 text-[10px]">
-                      {open}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <div />
-              )}
+              <div
+                className="text-muted-foreground tabular flex items-center justify-end gap-1 text-[11px]"
+                title={
+                  since === undefined
+                    ? "No 1:1 ever recorded"
+                    : `Last 1:1 ${since} days ago`
+                }
+              >
+                {since === undefined ? (
+                  <span className="text-status-under flex items-center gap-0.5 font-medium">
+                    <MessageSquareOff className="size-3" />
+                    never
+                  </span>
+                ) : (
+                  <span
+                    className={cn(
+                      since > OVERDUE_1ON1_DAYS &&
+                        "text-status-under font-medium",
+                    )}
+                  >
+                    {since}d
+                  </span>
+                )}
+                {open > 0 && (
+                  <span className="bg-secondary text-secondary-foreground rounded px-1 text-[10px]">
+                    {open}
+                  </span>
+                )}
+              </div>
 
               <div className="flex justify-end">
-                <Badge variant="outline" className={cn("shrink-0", meta.text, meta.bg)}>
+                <Badge
+                  variant="outline"
+                  className={cn("shrink-0", meta.text, meta.bg)}
+                >
                   {meta.label}
                 </Badge>
               </div>

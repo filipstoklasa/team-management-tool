@@ -1,17 +1,15 @@
 import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GuidancePanel } from "@/components/people/guidance-panel";
-import { PeopleRecordsUnavailable } from "@/components/people/people-records-unavailable";
 import { OneOnOneEditor } from "@/components/people/one-on-one-editor";
 import { ActionItemList } from "@/components/people/action-item-list";
-import { getActionItems, getOneOnOne, peopleRecordsAvailable } from "@/data/people.ts";
+import { getActionItems, getOneOnOne } from "@/data/people.ts";
 
 export default async function EditOneOnOnePage({
   params,
 }: PageProps<"/people/[userId]/one-on-ones/[oneOnOneId]">) {
   const { userId, oneOnOneId } = await params;
   const id = Number(userId);
-  if (!peopleRecordsAvailable()) return <PeopleRecordsUnavailable />;
 
   const session = await getOneOnOne(Number(oneOnOneId));
   if (!session || session.userId !== id) notFound();

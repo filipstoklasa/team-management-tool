@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { addGoalUpdate, saveGoal } from "@/actions/people.ts";
-import type { Goal } from "@/db/people/schema.ts";
+import type { Goal } from "@/db/schema/people.ts";
 import { today } from "@/domain/date.ts";
 
 const CATEGORIES = ["technical", "leadership", "delivery", "other"] as const;

@@ -1,23 +1,19 @@
 /**
- * Makes a portable copy of the databases — the half of a machine transfer that
+ * Makes a portable copy of the database — the half of a machine transfer that
  * git cannot do, since `data/` is gitignored (§7) and must stay that way.
  *
  * Uses `VACUUM INTO` rather than copying the file. A live database has a `-wal`
  * sidecar holding committed pages that are not yet in the main file, so copying
- * `allocation.db` alone can silently lose the most recent writes. `VACUUM INTO`
- * writes a single checkpointed, defragmented file with no sidecars, and does it
- * inside a read transaction, so it is consistent even if the app is running.
- *
- * The two databases are written as two separate files, deliberately. §7 wants
- * `allocation.db` to be movable "without the people data being present at all",
- * and that property is worth just as much in a backup as it is at runtime.
+ * `app.db` alone can silently lose the most recent writes. `VACUUM INTO` writes
+ * a single checkpointed, defragmented file with no sidecars, and does it inside
+ * a read transaction, so it is consistent even if the app is running.
  *
  * Usage:  npm run db:backup [-- <directory>]
  */
 import Database from "better-sqlite3";
 import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { ALLOCATION_DB_PATH, PEOPLE_DB_PATH } from "../src/db/paths.ts";
+import { DB_PATH } from "../src/db/paths.ts";
 
 interface Copied {
   file: string;
@@ -83,17 +79,14 @@ if (existsSync(target)) {
   console.error(`Refusing to write into an existing directory: ${target}`);
   process.exit(1);
 }
-if (!existsSync(ALLOCATION_DB_PATH)) {
-  console.error(`No allocation database at ${ALLOCATION_DB_PATH}. Nothing to back up.`);
+if (!existsSync(DB_PATH)) {
+  console.error(`No database at ${DB_PATH}. Nothing to back up.`);
   process.exit(1);
 }
 
 mkdirSync(target, { recursive: true });
 
-const allocation = copy(ALLOCATION_DB_PATH, path.join(target, "allocation.db"));
-const people = existsSync(PEOPLE_DB_PATH)
-  ? copy(PEOPLE_DB_PATH, path.join(target, "people.db"))
-  : null;
+const database = copy(DB_PATH, path.join(target, "app.db"));
 
 writeFileSync(
   path.join(target, "manifest.json"),
@@ -102,8 +95,7 @@ writeFileSync(
       createdAt: new Date().toISOString(),
       node: process.version,
       sqlite: sqliteVersion(),
-      allocation,
-      people,
+      database,
     },
     null,
     2,
@@ -112,9 +104,4 @@ writeFileSync(
 
 const rows = (c: Copied) => Object.values(c.tables).reduce((a, b) => a + b, 0);
 console.log(`Backup written to ${target}`);
-console.log(`  allocation.db  ${rows(allocation)} rows`);
-console.log(
-  people
-    ? `  people.db      ${rows(people)} rows`
-    : "  people.db      not present on this machine — nothing to copy",
-);
+console.log(`  app.db  ${rows(database)} rows`);

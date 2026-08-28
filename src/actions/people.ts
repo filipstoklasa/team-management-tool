@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { eq, inArray, lt } from "drizzle-orm";
-import { getPeopleDb } from "@/db/people/client.ts";
+import { db } from "@/db/client.ts";
 import {
   actionItems,
   feedback,
   goalUpdates,
   goals,
   oneOnOnes,
-} from "@/db/people/schema.ts";
+} from "@/db/schema/people.ts";
 import {
   actionItemSchema,
   feedbackSchema,
@@ -23,25 +23,12 @@ import { fail, fromZod, ok, type ActionResult } from "./result.ts";
 /**
  * People-records mutations (§5).
  *
- * Every one of these begins by checking that people.db exists, because §9.2
- * makes its absence a supported state rather than an error. Nothing here caches
- * anything (§10.6).
+ * Nothing here caches anything (§10.6).
  */
-function db() {
-  const handle = getPeopleDb();
-  if (!handle) throw new PeopleRecordsUnavailable();
-  return handle;
-}
-
-class PeopleRecordsUnavailable extends Error {}
-
 function guard<T>(fn: () => T): ActionResult<T> {
   try {
     return ok(fn());
   } catch (error) {
-    if (error instanceof PeopleRecordsUnavailable) {
-      return fail("The people database is not present on this machine.");
-    }
     console.error("people records action failed:", error);
     return fail("Something went wrong saving that.");
   }
@@ -62,7 +49,7 @@ export async function saveOneOnOne(input: unknown) {
   const result = guard(() => {
     const now = new Date();
     if (v.id) {
-      return db()
+      return db
         .update(oneOnOnes)
         .set({
           date: v.date,
@@ -74,7 +61,7 @@ export async function saveOneOnOne(input: unknown) {
         .returning()
         .get();
     }
-    return db()
+    return db
       .insert(oneOnOnes)
       .values({
         userId: v.userId,
@@ -94,7 +81,7 @@ export async function saveOneOnOne(input: unknown) {
 
 export async function deleteOneOnOne(id: number, userId: number) {
   const result = guard(() => {
-    db().delete(oneOnOnes).where(eq(oneOnOnes.id, id)).run();
+    db.delete(oneOnOnes).where(eq(oneOnOnes.id, id)).run();
   });
   if (result.ok) refresh(userId);
   return result;
@@ -110,7 +97,7 @@ export async function saveActionItem(input: unknown) {
   const result = guard(() => {
     const closing = v.status !== "open";
     if (v.id) {
-      return db()
+      return db
         .update(actionItems)
         .set({
           description: v.description,
@@ -123,7 +110,7 @@ export async function saveActionItem(input: unknown) {
         .returning()
         .get();
     }
-    return db()
+    return db
       .insert(actionItems)
       .values({
         userId: v.userId,
@@ -149,7 +136,7 @@ export async function setActionItemStatus(
   status: "open" | "done" | "dropped",
 ) {
   const result = guard(() =>
-    db()
+    db
       .update(actionItems)
       .set({ status, closedAt: status === "open" ? null : new Date() })
       .where(eq(actionItems.id, id))
@@ -169,7 +156,7 @@ export async function saveGoal(input: unknown) {
   const result = guard(() => {
     const now = new Date();
     if (v.id) {
-      return db()
+      return db
         .update(goals)
         .set({
           title: v.title,
@@ -183,7 +170,7 @@ export async function saveGoal(input: unknown) {
         .returning()
         .get();
     }
-    return db()
+    return db
       .insert(goals)
       .values({
         userId: v.userId,
@@ -209,13 +196,13 @@ export async function addGoalUpdate(input: unknown, userId: number) {
   const v = parsed.data;
 
   const result = guard(() => {
-    const row = db()
+    const row = db
       .insert(goalUpdates)
       .values({ goalId: v.goalId, date: v.date, note: v.note })
       .returning()
       .get();
     // Touching the goal keeps "quietly stalling" (§5.2) honest.
-    db().update(goals).set({ updatedAt: new Date() }).where(eq(goals.id, v.goalId)).run();
+    db.update(goals).set({ updatedAt: new Date() }).where(eq(goals.id, v.goalId)).run();
     return row;
   });
 
@@ -232,7 +219,7 @@ export async function saveFeedback(input: unknown) {
 
   const result = guard(() => {
     if (v.id) {
-      return db()
+      return db
         .update(feedback)
         .set({
           date: v.date,
@@ -246,7 +233,7 @@ export async function saveFeedback(input: unknown) {
         .returning()
         .get();
     }
-    return db()
+    return db
       .insert(feedback)
       .values({
         userId: v.userId,
@@ -267,7 +254,7 @@ export async function saveFeedback(input: unknown) {
 
 export async function markFeedbackShared(id: number, userId: number, shared: boolean) {
   const result = guard(() =>
-    db().update(feedback).set({ shared }).where(eq(feedback.id, id)).run(),
+    db.update(feedback).set({ shared }).where(eq(feedback.id, id)).run(),
   );
   if (result.ok) refresh(userId);
   return result;
@@ -297,11 +284,8 @@ export interface DeletionTally {
 export async function hardDeletePersonRecords(
   userId: number,
 ): Promise<ActionResult<DeletionTally>> {
-  const handle = getPeopleDb();
-  if (!handle) return fail("The people database is not present on this machine.");
-
   try {
-    const tally = handle.transaction((tx) => {
+    const tally = db.transaction((tx) => {
       const goalIds = tx
         .select({ id: goals.id })
         .from(goals)
@@ -341,8 +325,6 @@ export async function hardDeletePersonRecords(
 export async function deleteOlderThan(
   monthsToKeep: number,
 ): Promise<ActionResult<{ oneOnOnes: number; feedback: number }>> {
-  const handle = getPeopleDb();
-  if (!handle) return fail("The people database is not present on this machine.");
   if (!Number.isFinite(monthsToKeep) || monthsToKeep < 1) {
     return fail("Retention window must be at least one month.");
   }
@@ -350,7 +332,7 @@ export async function deleteOlderThan(
   const cutoff = addDays(today(), -Math.round(monthsToKeep * 30.44));
 
   try {
-    const tally = handle.transaction((tx) => ({
+    const tally = db.transaction((tx) => ({
       oneOnOnes: tx.delete(oneOnOnes).where(lt(oneOnOnes.date, cutoff)).run().changes,
       feedback: tx.delete(feedback).where(lt(feedback.date, cutoff)).run().changes,
     }));
@@ -363,29 +345,25 @@ export async function deleteOlderThan(
   }
 }
 
-export async function countPersonRecords(
-  userId: number,
-): Promise<DeletionTally | null> {
-  const handle = getPeopleDb();
-  if (!handle) return null;
-  const goalIds = handle
+export async function countPersonRecords(userId: number): Promise<DeletionTally> {
+  const goalIds = db
     .select({ id: goals.id })
     .from(goals)
     .where(eq(goals.userId, userId))
     .all()
     .map((g) => g.id);
   return {
-    oneOnOnes: handle.select().from(oneOnOnes).where(eq(oneOnOnes.userId, userId)).all()
+    oneOnOnes: db.select().from(oneOnOnes).where(eq(oneOnOnes.userId, userId)).all()
       .length,
-    actionItems: handle.select().from(actionItems).where(eq(actionItems.userId, userId))
+    actionItems: db.select().from(actionItems).where(eq(actionItems.userId, userId))
       .all().length,
     goals: goalIds.length,
     goalUpdates:
       goalIds.length > 0
-        ? handle.select().from(goalUpdates).where(inArray(goalUpdates.goalId, goalIds))
+        ? db.select().from(goalUpdates).where(inArray(goalUpdates.goalId, goalIds))
             .all().length
         : 0,
-    feedback: handle.select().from(feedback).where(eq(feedback.userId, userId)).all()
+    feedback: db.select().from(feedback).where(eq(feedback.userId, userId)).all()
       .length,
   };
 }

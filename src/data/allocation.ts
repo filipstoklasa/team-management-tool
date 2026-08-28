@@ -1,6 +1,6 @@
 import "server-only";
 import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
-import { allocationDb } from "@/db/allocation/client.ts";
+import { db } from "@/db/client.ts";
 import {
   allocationChanges,
   allocations,
@@ -13,7 +13,7 @@ import {
   type App,
   type Team,
   type User,
-} from "@/db/allocation/schema.ts";
+} from "@/db/schema/allocation.ts";
 import type { IsoDate } from "@/domain/date.ts";
 import type { DateRange } from "@/domain/intervals.ts";
 import {
@@ -68,7 +68,7 @@ function round2(n: number): number {
 }
 
 async function allocationRowsOn(date: IsoDate): Promise<AllocationRow[]> {
-  return allocationDb
+  return db
     .select({
       id: allocations.id,
       userId: allocations.userId,
@@ -89,7 +89,7 @@ async function allocationRowsOn(date: IsoDate): Promise<AllocationRow[]> {
 }
 
 async function teamsByUser(): Promise<Map<number, Team[]>> {
-  const rows = await allocationDb
+  const rows = await db
     .select({ userId: userTeams.userId, team: teams })
     .from(userTeams)
     .innerJoin(teams, eq(teams.id, userTeams.teamId));
@@ -103,7 +103,7 @@ async function teamsByUser(): Promise<Map<number, Team[]>> {
 }
 
 async function teamsByApp(): Promise<Map<number, Team[]>> {
-  const rows = await allocationDb
+  const rows = await db
     .select({ appId: appTeams.appId, team: teams })
     .from(appTeams)
     .innerJoin(teams, eq(teams.id, appTeams.teamId));
@@ -126,7 +126,7 @@ export async function getPeopleAllocation(
   teamIds?: number[],
 ): Promise<PersonAllocation[]> {
   const [activeUsers, rows, userTeamMap] = await Promise.all([
-    allocationDb
+    db
       .select()
       .from(users)
       .where(eq(users.active, true))
@@ -163,7 +163,7 @@ export async function getAppsAllocation(
   teamIds?: number[],
 ): Promise<AppAllocation[]> {
   const [activeApps, rows, appTeamMap] = await Promise.all([
-    allocationDb
+    db
       .select()
       .from(apps)
       .where(eq(apps.active, true))
@@ -196,7 +196,7 @@ export async function getAppsAllocation(
 }
 
 export async function getTeams(): Promise<Team[]> {
-  return allocationDb
+  return db
     .select()
     .from(teams)
     .where(eq(teams.active, true))
@@ -204,21 +204,21 @@ export async function getTeams(): Promise<Team[]> {
 }
 
 export async function getUser(userId: number): Promise<User | undefined> {
-  return allocationDb.select().from(users).where(eq(users.id, userId)).get();
+  return db.select().from(users).where(eq(users.id, userId)).get();
 }
 
 export async function getApp(appId: number): Promise<App | undefined> {
-  return allocationDb.select().from(apps).where(eq(apps.id, appId)).get();
+  return db.select().from(apps).where(eq(apps.id, appId)).get();
 }
 
 export async function getAllUsers(includeInactive = false): Promise<User[]> {
-  const q = allocationDb.select().from(users).orderBy(asc(users.name));
+  const q = db.select().from(users).orderBy(asc(users.name));
   if (includeInactive) return q;
   return q.where(eq(users.active, true));
 }
 
 export async function getAllApps(includeInactive = false): Promise<App[]> {
-  const q = allocationDb.select().from(apps).orderBy(asc(apps.name));
+  const q = db.select().from(apps).orderBy(asc(apps.name));
   if (includeInactive) return q;
   return q.where(eq(apps.active, true));
 }
@@ -227,7 +227,7 @@ export async function getAllApps(includeInactive = false): Promise<App[]> {
 export async function getUserAllocationHistory(
   userId: number,
 ): Promise<AllocationRow[]> {
-  return allocationDb
+  return db
     .select({
       id: allocations.id,
       userId: allocations.userId,
@@ -251,7 +251,7 @@ export async function getUserAllocationHistory(
 export async function getAppAllocationHistory(
   appId: number,
 ): Promise<AllocationRow[]> {
-  return allocationDb
+  return db
     .select({
       id: allocations.id,
       userId: allocations.userId,
@@ -294,7 +294,7 @@ export async function getAllocationChanges(filter?: {
   if (filter?.appId !== undefined) conditions.push(eq(allocations.appId, filter.appId));
   if (filter?.userId !== undefined) conditions.push(eq(allocations.userId, filter.userId));
 
-  return allocationDb
+  return db
     .select({
       id: allocationChanges.id,
       changedAt: allocationChanges.changedAt,
@@ -337,7 +337,7 @@ export async function getUserAllocationsForConflictCheck(
   userId: number,
   excludeAllocationId?: number,
 ): Promise<Allocation[]> {
-  const rows = await allocationDb
+  const rows = await db
     .select()
     .from(allocations)
     .where(eq(allocations.userId, userId));
@@ -347,12 +347,12 @@ export async function getUserAllocationsForConflictCheck(
 }
 
 export async function getAllocation(id: number): Promise<Allocation | undefined> {
-  return allocationDb.select().from(allocations).where(eq(allocations.id, id)).get();
+  return db.select().from(allocations).where(eq(allocations.id, id)).get();
 }
 
 export async function getTeamsForUsers(userIds: number[]) {
   if (userIds.length === 0) return [];
-  return allocationDb
+  return db
     .select({ userId: userTeams.userId, team: teams })
     .from(userTeams)
     .innerJoin(teams, eq(teams.id, userTeams.teamId))
@@ -428,18 +428,18 @@ export async function getAppStaffingOverTime(
  * reactivatable) is here.
  */
 export async function getAllTeams(includeInactive = false): Promise<Team[]> {
-  const q = allocationDb.select().from(teams).orderBy(asc(teams.name));
+  const q = db.select().from(teams).orderBy(asc(teams.name));
   if (includeInactive) return q;
   return q.where(eq(teams.active, true));
 }
 
 export async function getTeamIdsByUser(): Promise<Map<number, number[]>> {
-  const rows = await allocationDb.select().from(userTeams);
+  const rows = await db.select().from(userTeams);
   return groupIds(rows.map((r) => [r.userId, r.teamId]));
 }
 
 export async function getTeamIdsByApp(): Promise<Map<number, number[]>> {
-  const rows = await allocationDb.select().from(appTeams);
+  const rows = await db.select().from(appTeams);
   return groupIds(rows.map((r) => [r.appId, r.teamId]));
 }
 

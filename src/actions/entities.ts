@@ -2,9 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
-import { allocationDb } from "@/db/allocation/client.ts";
-import { appTeams, apps, teams, userTeams, users } from "@/db/allocation/schema.ts";
-import { peopleDbAvailable } from "@/db/people/client.ts";
+import { db } from "@/db/client.ts";
+import { appTeams, apps, teams, userTeams, users } from "@/db/schema/allocation.ts";
 import { appSchema, teamSchema, userSchema } from "@/domain/schemas.ts";
 import { fail, fromZod, ok, type ActionResult } from "./result.ts";
 
@@ -18,7 +17,7 @@ export async function saveUser(input: unknown) {
   const v = parsed.data;
 
   try {
-    const row = allocationDb.transaction((tx) => {
+    const row = db.transaction((tx) => {
       const user = v.id
         ? tx
             .update(users)
@@ -65,7 +64,7 @@ export async function setUserActive(
   active: boolean,
 ): Promise<ActionResult<DeactivationResult>> {
   try {
-    const user = allocationDb
+    const user = db
       .update(users)
       .set({ active })
       .where(eq(users.id, userId))
@@ -76,7 +75,7 @@ export async function setUserActive(
     return ok({
       userId,
       userName: user.name,
-      promptPeopleRecordsDeletion: !active && peopleDbAvailable(),
+      promptPeopleRecordsDeletion: !active,
     });
   } catch (error) {
     console.error("setUserActive failed:", error);
@@ -90,8 +89,8 @@ export async function saveTeam(input: unknown) {
   const v = parsed.data;
   try {
     const row = v.id
-      ? allocationDb.update(teams).set({ name: v.name }).where(eq(teams.id, v.id)).returning().get()
-      : allocationDb.insert(teams).values({ name: v.name, active: true }).returning().get();
+      ? db.update(teams).set({ name: v.name }).where(eq(teams.id, v.id)).returning().get()
+      : db.insert(teams).values({ name: v.name, active: true }).returning().get();
     refresh();
     return ok(row);
   } catch (error) {
@@ -102,7 +101,7 @@ export async function saveTeam(input: unknown) {
 
 export async function setTeamActive(teamId: number, active: boolean) {
   try {
-    allocationDb.update(teams).set({ active }).where(eq(teams.id, teamId)).run();
+    db.update(teams).set({ active }).where(eq(teams.id, teamId)).run();
     refresh();
     return ok(undefined);
   } catch {
@@ -116,7 +115,7 @@ export async function saveApp(input: unknown) {
   const v = parsed.data;
 
   try {
-    const row = allocationDb.transaction((tx) => {
+    const row = db.transaction((tx) => {
       const app = v.id
         ? tx
             .update(apps)
@@ -151,7 +150,7 @@ export async function saveApp(input: unknown) {
 
 export async function setAppActive(appId: number, active: boolean) {
   try {
-    allocationDb.update(apps).set({ active }).where(eq(apps.id, appId)).run();
+    db.update(apps).set({ active }).where(eq(apps.id, appId)).run();
     refresh();
     return ok(undefined);
   } catch {

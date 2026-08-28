@@ -26,7 +26,7 @@ import {
   setUserActive,
 } from "@/actions/entities.ts";
 import { hardDeletePersonRecords } from "@/actions/people.ts";
-import type { App, Team, User } from "@/db/allocation/schema.ts";
+import type { App, Team, User } from "@/db/schema/allocation.ts";
 import { cn } from "@/lib/utils";
 
 interface UserWithTeams extends User {

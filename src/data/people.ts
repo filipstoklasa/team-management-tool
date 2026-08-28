@@ -1,6 +1,6 @@
 import "server-only";
 import { and, asc, desc, eq, isNull, lt, not, sql } from "drizzle-orm";
-import { getPeopleDb, peopleDbAvailable } from "@/db/people/client.ts";
+import { db } from "@/db/client.ts";
 import {
   actionItems,
   feedback,
@@ -12,32 +12,20 @@ import {
   type Goal,
   type GoalUpdate,
   type OneOnOne,
-} from "@/db/people/schema.ts";
+} from "@/db/schema/people.ts";
 import { addDays, daysBetween, today, type IsoDate } from "@/domain/date.ts";
 
 /**
  * People-records reads (§5).
  *
- * TWO RULES GOVERN THIS FILE, both from §10.6:
- *
- *   1. NOTHING HERE IS EVER CACHED. No `'use cache'`, no `unstable_cache`.
- *      Cached results are serialised to `.next/cache`, which would put note
- *      text in a second location outside people.db and defeat §9.2. An ESLint
- *      rule enforces this; the reason is here so the rule is not a mystery.
- *
- *   2. EVERY FUNCTION TOLERATES AN ABSENT DATABASE. §9.2 requires allocation to
- *      be fully usable with people.db missing, so these return empty results
- *      rather than throwing. Callers check `peopleRecordsAvailable()` when they need
- *      to distinguish "no records" from "no database".
+ * NOTHING HERE IS EVER CACHED (§10.6). No `'use cache'`, no `unstable_cache`.
+ * Cached results are serialised to `.next/cache`, which would put note text in
+ * a second location on disk and outside the reach of §9.5's delete. That rule
+ * survives the database merge unchanged — it was never about how many files
+ * the data lived in.
  */
 
-export function peopleRecordsAvailable(): boolean {
-  return peopleDbAvailable();
-}
-
 export async function getOneOnOnes(userId: number): Promise<OneOnOne[]> {
-  const db = getPeopleDb();
-  if (!db) return [];
   return db
     .select()
     .from(oneOnOnes)
@@ -46,16 +34,12 @@ export async function getOneOnOnes(userId: number): Promise<OneOnOne[]> {
 }
 
 export async function getOneOnOne(id: number): Promise<OneOnOne | undefined> {
-  const db = getPeopleDb();
-  if (!db) return undefined;
   return db.select().from(oneOnOnes).where(eq(oneOnOnes.id, id)).get();
 }
 
 export async function getLastOneOnOne(
   userId: number,
 ): Promise<OneOnOne | undefined> {
-  const db = getPeopleDb();
-  if (!db) return undefined;
   return db
     .select()
     .from(oneOnOnes)
@@ -64,12 +48,9 @@ export async function getLastOneOnOne(
     .get();
 }
 
-/** §6.1: "Each row also shows days since last 1:1." null = never, or no database. */
+/** §6.1: "Each row also shows days since last 1:1." Absent = never had one. */
 export async function getDaysSinceLastOneOnOne(): Promise<Map<number, number>> {
-  const db = getPeopleDb();
   const result = new Map<number, number>();
-  if (!db) return result;
-
   const rows = await db
     .select({
       userId: oneOnOnes.userId,
@@ -89,8 +70,6 @@ export async function getActionItems(
   userId: number,
   status?: "open" | "done" | "dropped",
 ): Promise<ActionItem[]> {
-  const db = getPeopleDb();
-  if (!db) return [];
   const where =
     status === undefined
       ? eq(actionItems.userId, userId)
@@ -103,9 +82,7 @@ export async function getActionItems(
 }
 
 export async function getOpenActionItemCount(): Promise<Map<number, number>> {
-  const db = getPeopleDb();
   const result = new Map<number, number>();
-  if (!db) return result;
   const rows = await db
     .select({ userId: actionItems.userId, n: sql<number>`count(*)`.as("n") })
     .from(actionItems)
@@ -116,8 +93,6 @@ export async function getOpenActionItemCount(): Promise<Map<number, number>> {
 }
 
 export async function getGoals(userId: number): Promise<Goal[]> {
-  const db = getPeopleDb();
-  if (!db) return [];
   return db
     .select()
     .from(goals)
@@ -126,7 +101,6 @@ export async function getGoals(userId: number): Promise<Goal[]> {
 }
 
 export async function getGoalUpdates(goalIds: number[]): Promise<Map<number, GoalUpdate[]>> {
-  const db = getPeopleDb();
   const result = new Map<number, GoalUpdate[]>();
   if (!db || goalIds.length === 0) return result;
   const rows = await db
@@ -143,8 +117,6 @@ export async function getGoalUpdates(goalIds: number[]): Promise<Map<number, Goa
 }
 
 export async function getFeedback(userId: number): Promise<Feedback[]> {
-  const db = getPeopleDb();
-  if (!db) return [];
   return db
     .select()
     .from(feedback)
@@ -175,16 +147,6 @@ export interface PrepPanelData {
 const STALL_DAYS = 60;
 
 export async function getPrepPanelData(userId: number): Promise<PrepPanelData> {
-  const db = getPeopleDb();
-  if (!db) {
-    return {
-      openActionItems: [],
-      unsharedFeedback: [],
-      stallingGoals: [],
-      lastOneOnOne: undefined,
-    };
-  }
-
   const cutoff = addDays(today(), -STALL_DAYS);
 
   const [openItems, unshared, activeGoals, last] = await Promise.all([
@@ -223,8 +185,6 @@ export async function getPrepPanelData(userId: number): Promise<PrepPanelData> {
 
 /** Counts for the §6.1 summary strip that come from people records. */
 export async function getPeopleSummary() {
-  const db = getPeopleDb();
-  if (!db) return null;
 
   const [openItems, sinceMap] = await Promise.all([
     db
@@ -250,8 +210,6 @@ export async function getPeopleSummary() {
 
 /** §9.5 — retention review: records older than the configured window. */
 export async function getRetentionCandidates(months: number) {
-  const db = getPeopleDb();
-  if (!db) return null;
   const cutoff = addDays(today(), -Math.round(months * 30.44));
   const [sessions, feedbackRows, closedItems] = await Promise.all([
     db.select().from(oneOnOnes).where(lt(oneOnOnes.date, cutoff)).orderBy(asc(oneOnOnes.date)),
