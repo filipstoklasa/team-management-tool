@@ -2,6 +2,9 @@
   "name": "moodys-team-management",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "type": "module",
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
@@ -16,6 +19,8 @@
     "db:migrate:people": "drizzle-kit migrate --config=drizzle.config.people.ts",
     "db:migrate": "npm run db:migrate:allocation && npm run db:migrate:people",
     "db:seed": "node scripts/seed.ts",
+    "db:backup": "node scripts/backup.ts",
+    "db:restore": "node scripts/restore.ts",
     "db:reset": "rm -rf data && npm run db:migrate && npm run db:seed"
   },
   "dependencies": {

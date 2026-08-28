@@ -23,6 +23,9 @@ data/
 # Exports (§9.2 — separate export paths)
 exports/
 
+# Database backups — same rule as data/ (§7, §9.2)
+backup/
+
 # Tests
 playwright-report/
 test-results/
