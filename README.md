@@ -87,6 +87,15 @@ npm run db:restore -- transfer
 
 The app runs normally; Module B screens say the records are not present.
 
+When you want `people.db` genuinely gone from a machine, delete its sidecars
+with it — `data/people.db-wal` and `data/people.db-shm`. The `-wal` holds
+committed pages that a clean shutdown checkpoints away but a crash does not, so
+it can still contain note text after the main file is deleted:
+
+```sh
+rm -f data/people.db data/people.db-wal data/people.db-shm
+```
+
 ## Notes for whoever maintains this
 
 - **`.npmrc` sets `ignore-scripts`.** `better-sqlite3` ships prebuilt binaries
@@ -102,5 +111,6 @@ The app runs normally; Module B screens say the records are not present.
 - `npm test` runs the domain unit tests with `node --test`, no test framework.
 - The §9.2 acceptance test, worth re-running whenever Module B is touched:
   `mv data/people.db /tmp && npm run dev` — Module A must remain fully usable.
+  Move the `-wal` and `-shm` with it, or you leave orphaned sidecars behind.
 
 The full product and technical design is in `team-management-tool-design.md`.
