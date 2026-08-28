@@ -8,23 +8,24 @@ wins — and the disagreement is a bug in one of them.
 
 ## The three rules that are easy to break
 
-**1. Two databases, never joined in SQL.** `allocation.db` and `people.db` are
-separate files. There is no `ATTACH` and no cross-file foreign key — the people
-tables store `user_id` as a plain integer, and that is the mechanism, not a
-compromise. Joins happen in the component tree.
+**1. One database, one connection.** Everything lives in `data/app.db` and joins
+on real foreign keys. It was two files until §9.2 was retired — if you find a
+comment, guard or branch that still assumes `people.db` might be absent, it is a
+leftover and should go. `scripts/merge-databases.ts` is the one-time move and is
+kept for reference.
 
-**2. Allocation must work with `people.db` absent.** This is §9.2 and it is
-testable, so test it: `mv data/people.db /tmp && npm run dev` — every route
-must still render and the dashboard must drop its people-records columns rather
-than show zeros. Reads go through `getPeopleDb()`, which returns `null` when the
-file is missing; `peopleRecordsAvailable()` is the guard. Run this whenever you
-touch the people side. Move the `-wal` and `-shm` with it.
+**2. The people tables carry no `onDelete` on `user_id`.** This is deliberate and
+§9.5 depends on it: deactivating a leaver must never cascade into deleting their
+1:1 notes. Deletion of people records is a separate, explicitly confirmed action.
+Adding a cascade would make it possible to lose someone's records as a side
+effect of an unrelated operation.
 
 **3. People-records content is never cached and never prerendered.** No
 `use cache` under `src/data/people.ts` or the people components. The root layout
-sets
-`export const dynamic = "force-dynamic"` so nothing is baked into the build
-output — a `○ (Static)` route in `next build` output is a bug.
+sets `export const dynamic = "force-dynamic"` so nothing is baked into the build
+output — a `○ (Static)` route in `next build` output is a bug. This survives the
+database merge unchanged: it is what makes §9.5's delete real, since a cached
+copy under `.next/` is a second location no delete reaches.
 
 ## Domain invariants
 
@@ -85,8 +86,8 @@ installed, and both servers bind `127.0.0.1`.
 src/
   app/          routes; loading.tsx per segment
   components/   ui/ is shadcn; the rest is feature-grouped
-  db/           {allocation,people}/{schema,client}.ts — one connection each
-  data/         reads — allocation.ts | people.ts (never cached, absence-tolerant)
+  db/           client.ts + schema/{allocation,people}.ts — one connection
+  data/         reads — allocation.ts | people.ts (people reads are never cached)
   actions/      "use server" mutations, all returning ActionResult
   domain/       pure logic + colocated tests: date, intervals, points-in-time, metrics
 drizzle/        migrations, committed
@@ -98,7 +99,7 @@ scripts/        seed, backup, restore
 ```sh
 npm run dev            # 127.0.0.1:3000
 npm run build && npm start
-npm test               # 44 domain tests
+npm test               # 53 domain tests
 npm run lint && npm run typecheck
 npm run db:migrate     # creates data/ if absent
 npm run db:seed

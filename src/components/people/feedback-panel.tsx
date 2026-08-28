@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { markFeedbackShared, saveFeedback } from "@/actions/people.ts";
-import type { Feedback } from "@/db/people/schema.ts";
+import type { Feedback } from "@/db/schema/people.ts";
 import { formatIsoDate, today } from "@/domain/date.ts";
 import { cn } from "@/lib/utils";
 

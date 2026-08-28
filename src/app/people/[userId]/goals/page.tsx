@@ -3,8 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GoalDialog, GoalUpdateDialog } from "@/components/people/goal-dialog";
-import { PeopleRecordsUnavailable } from "@/components/people/people-records-unavailable";
-import { getGoalUpdates, getGoals, peopleRecordsAvailable } from "@/data/people.ts";
+import { getGoalUpdates, getGoals } from "@/data/people.ts";
 import { addDays, daysBetween, formatIsoDate, today } from "@/domain/date.ts";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +11,6 @@ import { cn } from "@/lib/utils";
 export default async function GoalsPage({ params }: PageProps<"/people/[userId]/goals">) {
   const { userId } = await params;
   const id = Number(userId);
-  if (!peopleRecordsAvailable()) return <PeopleRecordsUnavailable />;
 
   const goals = await getGoals(id);
   const updates = await getGoalUpdates(goals.map((g) => g.id));

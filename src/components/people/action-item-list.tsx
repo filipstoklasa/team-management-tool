@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { setActionItemStatus } from "@/actions/people.ts";
-import type { ActionItem } from "@/db/people/schema.ts";
+import type { ActionItem } from "@/db/schema/people.ts";
 import { daysBetween, formatIsoDate, today } from "@/domain/date.ts";
 import { cn } from "@/lib/utils";
 

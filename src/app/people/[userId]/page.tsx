@@ -5,12 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getUserAllocationsOn } from "@/data/allocation.ts";
-import { getActionItems, getGoals, getLastOneOnOne, peopleRecordsAvailable } from "@/data/people.ts";
+import { getActionItems, getGoals, getLastOneOnOne } from "@/data/people.ts";
 import { daysBetween, formatIsoDate, today } from "@/domain/date.ts";
 import { appColor, formatPercent } from "@/lib/status.ts";
 
 /** §6.2 Overview tab — current allocations, active goals, open items, last 1:1. */
-export default async function OverviewPage({ params }: PageProps<"/people/[userId]">) {
+export default async function OverviewPage({
+  params,
+}: PageProps<"/people/[userId]">) {
   const { userId } = await params;
   const id = Number(userId);
 
@@ -18,7 +20,9 @@ export default async function OverviewPage({ params }: PageProps<"/people/[userI
     <div className="grid gap-5 lg:grid-cols-2">
       <Card className="gap-3">
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Current allocation</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Current allocation
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Suspense fallback={<Skeleton className="h-24 w-full" />}>
@@ -27,42 +31,40 @@ export default async function OverviewPage({ params }: PageProps<"/people/[userI
         </CardContent>
       </Card>
 
-      {peopleRecordsAvailable() && (
-        <>
-          <Card className="gap-3">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Open action items</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Suspense fallback={<Skeleton className="h-24 w-full" />}>
-                <OpenItems userId={id} />
-              </Suspense>
-            </CardContent>
-          </Card>
+      <Card className="gap-3">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">
+            Open action items
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+            <OpenItems userId={id} />
+          </Suspense>
+        </CardContent>
+      </Card>
 
-          <Card className="gap-3">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Active goals</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Suspense fallback={<Skeleton className="h-24 w-full" />}>
-                <ActiveGoals userId={id} />
-              </Suspense>
-            </CardContent>
-          </Card>
+      <Card className="gap-3">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Active goals</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+            <ActiveGoals userId={id} />
+          </Suspense>
+        </CardContent>
+      </Card>
 
-          <Card className="gap-3">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Last 1:1</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Suspense fallback={<Skeleton className="h-24 w-full" />}>
-                <LastOneOnOne userId={id} />
-              </Suspense>
-            </CardContent>
-          </Card>
-        </>
-      )}
+      <Card className="gap-3">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Last 1:1</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+            <LastOneOnOne userId={id} />
+          </Suspense>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -88,7 +90,9 @@ async function CurrentAllocations({ userId }: { userId: number }) {
               className="size-2.5 shrink-0 rounded-sm"
               style={{ backgroundColor: appColor(row.appId) }}
             />
-            <span className="min-w-0 flex-1 truncate text-sm">{row.appName}</span>
+            <span className="min-w-0 flex-1 truncate text-sm">
+              {row.appName}
+            </span>
             <span className="tabular text-sm font-medium">
               {formatPercent(row.percentage)}
             </span>
@@ -105,7 +109,9 @@ async function CurrentAllocations({ userId }: { userId: number }) {
 async function OpenItems({ userId }: { userId: number }) {
   const items = await getActionItems(userId, "open");
   if (items.length === 0) {
-    return <p className="text-muted-foreground text-sm">Nothing outstanding.</p>;
+    return (
+      <p className="text-muted-foreground text-sm">Nothing outstanding.</p>
+    );
   }
   const t = today();
   return (
@@ -122,10 +128,14 @@ async function OpenItems({ userId }: { userId: number }) {
             {item.dueDate && (
               <span
                 className={
-                  overdue ? "text-status-unallocated text-[11px] font-medium" : "text-muted-foreground text-[11px]"
+                  overdue
+                    ? "text-status-unallocated text-[11px] font-medium"
+                    : "text-muted-foreground text-[11px]"
                 }
               >
-                {overdue ? `${daysBetween(item.dueDate, t)}d late` : formatIsoDate(item.dueDate)}
+                {overdue
+                  ? `${daysBetween(item.dueDate, t)}d late`
+                  : formatIsoDate(item.dueDate)}
               </span>
             )}
           </li>

@@ -3,17 +3,14 @@
  * `data/`.
  *
  * Restoring is not a merge. It replaces whatever is in `data/`, so it refuses
- * to run over an existing database unless `--force` is passed, and it never
- * touches a database the backup does not contain — restoring an
- * allocation-only backup on a machine that already has `people.db` leaves the
- * people data alone rather than deleting it.
+ * to run over an existing database unless `--force` is passed.
  *
  * Usage:  npm run db:restore -- <directory> [--force]
  */
 import Database from "better-sqlite3";
 import { copyFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
-import { ALLOCATION_DB_PATH, DATA_DIR, PEOPLE_DB_PATH } from "../src/db/paths.ts";
+import { DATA_DIR, DB_PATH } from "../src/db/paths.ts";
 
 const args = process.argv.slice(2);
 const force = args.includes("--force");
@@ -60,14 +57,9 @@ function restore(name: string, destination: string): boolean {
   return true;
 }
 
-const allocation = restore("allocation.db", ALLOCATION_DB_PATH);
-const people = restore("people.db", PEOPLE_DB_PATH);
-
-if (!allocation && !people) {
-  console.error(`${source} contains no allocation.db or people.db.`);
+if (!restore("app.db", DB_PATH)) {
+  console.error(`${source} contains no app.db.`);
   process.exit(1);
 }
 
-console.log(`Restored into ${DATA_DIR}`);
-console.log(`  allocation.db  ${allocation ? "restored" : "not in this backup — left as is"}`);
-console.log(`  people.db      ${people ? "restored" : "not in this backup — left as is"}`);
+console.log(`Restored app.db into ${DATA_DIR}`);

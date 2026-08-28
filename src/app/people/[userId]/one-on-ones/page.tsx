@@ -2,8 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { PeopleRecordsUnavailable } from "@/components/people/people-records-unavailable";
-import { getOneOnOnes, peopleRecordsAvailable } from "@/data/people.ts";
+import { getOneOnOnes } from "@/data/people.ts";
 import { daysBetween, formatIsoDate, today } from "@/domain/date.ts";
 
 /** §6.2 — "reverse-chronological session list". */
@@ -13,7 +12,6 @@ export default async function OneOnOnesPage({
   const { userId } = await params;
   const id = Number(userId);
 
-  if (!peopleRecordsAvailable()) return <PeopleRecordsUnavailable />;
 
   const sessions = await getOneOnOnes(id);
 

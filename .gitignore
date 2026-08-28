@@ -14,8 +14,8 @@ next-env.d.ts
 # Databases — never commit (§7, §9.2).
 # Anchored with a leading slash: an unanchored `data/` also matches src/data/,
 # which silently kept the entire read layer out of the repository.
-# people.db holds personal data about identifiable employees.
-# allocation.db is excluded too: it is generated from migrations + seed.
+# app.db holds personal data about identifiable people, and is generated from
+# migrations + seed in any case.
 /data/
 *.db
 *.db-wal
@@ -25,7 +25,7 @@ next-env.d.ts
 # Exports (§9.2 — separate export paths)
 /exports/
 
-# Database backups — same rule as data/ (§7, §9.2)
+# Database backups — same rule as data/ (§7)
 /backup/
 
 # Tests

@@ -291,13 +291,13 @@ CRUD for Users, Teams, Apps. **Deactivate rather than delete** on the allocation
 ### Hard technical requirements
 - **Runs locally. No cloud sync, no telemetry, no external network calls carrying app data.**
 - **No AI API calls processing people-records content.** If AI assistance is wanted later (e.g. summarising notes), it must run against a local model or not at all. Note content does not leave the machine.
-- **Two separate SQLite files**: `allocation.db` and `people.db`. The app opens both; they join in application code on `user_id`, not across a shared database file. This means the allocation database can be demoed, screenshotted, or shared without the people data being present at all.
+- **One SQLite file**: `app.db`. Allocations and people records live in the same database and join on a real foreign key. This was two files until §9.2 was retired.
 
 ### Implementation notes
 - Store dates as `DATE`, not `DATETIME` — allocations change on day boundaries and timezone handling only adds bugs here
 - Use half-open intervals `[start_date, end_date)` — end date exclusive. Avoids off-by-one gaps and overlaps when one allocation ends and another begins the same day
 - Seed with realistic dummy data during development so visual states (under / full / over) can be checked without hand-entering rows. **Seed data must use fictional names** — no real colleagues in the repo
-- If the repo is ever pushed anywhere, `people.db` and any export files must be gitignored. Add this to `.gitignore` in step 1, not later
+- If the repo is ever pushed anywhere, `app.db` and any export files must be gitignored. Add this to `.gitignore` in step 1, not later
 
 ---
 
@@ -324,11 +324,17 @@ People records hold personal data about identifiable people, recorded in an empl
 
 The following are build requirements, not suggestions.
 
+**Numbering note.** §9.2 and §9.4 were retired when the two databases were merged. Their numbers are kept rather than reused, because §9.1, §9.3, §9.5 and §10.6 are cited by section number throughout the code and renumbering would silently invalidate every one of those references.
+
 ### 9.1 Local only
 Storage is a local SQLite file on an encrypted disk. No cloud backup service, no sync, no third-party processing of note content. This is what makes a self-built tool defensible where a hosted one would not be.
 
-### 9.2 Separation
-Separate database files, separate screens, separate export paths. Allocation must be fully usable and shareable with `people.db` absent.
+### 9.2 Separation — retired
+This section required separate database files, separate screens and separate export paths, with allocation fully usable while `people.db` was absent.
+
+It was retired when the two databases were merged into `app.db`. The requirement existed to serve §9.4, and §9.4 turned out to rest on a question that was never answered — see below. What it cost was concrete: `user_id` could carry no foreign key, no transaction could span the two files, and every read of a people record needed an absent-database branch that no user was ever going to hit.
+
+Separate export paths survive as a habit rather than a rule: the CSV export reads allocation rows and nothing else, because an allocation report is not the place to put someone's 1:1 notes.
 
 ### 9.3 What gets recorded
 Suitable: development goals, skill growth areas, project ownership interests, delivery observations, factual summaries of what was discussed.
@@ -339,12 +345,12 @@ Anything that could become part of a formal HR or legal process belongs in the s
 
 Implementation: the 1:1 editor shows this guidance as persistent helper text, not a dismissible one-time notice.
 
-### 9.4 Not a system of record
-This tool is a personal working aid. It is not, and must not present itself as, a system of record.
+### 9.4 Not a system of record — retired
+This section asserted that the tool must never present itself as a system of record, and that the architecture had to let an organisation's policy on keeping people-management records outside a sanctioned HR system be honoured either way.
 
-Where a sanctioned HR system exists, that system is authoritative for anything formal — performance management, disciplinary matters, compensation — and this tool defers to it rather than duplicating it. §9.3 draws the same line at the level of individual notes; this is the same rule stated about the tool as a whole.
+It began life as an open question — *confirm with the employer whether managers may keep people-management records outside the sanctioned HR system* — and was later restated as a binding constraint without that question ever being answered. §9.2's two-file split was then justified by it. There is no employer: this is a personally owned tool. Both sections go.
 
-The architecture is built so that an organisation's answer about keeping people-management records outside a sanctioned system can be honoured either way: people records live in a separate database that can be omitted entirely, leaving allocation fully functional (§9.2). Allocation planning does not depend on any of this.
+§9.3 still draws the line at the level of an individual note, which is where it was always doing the real work.
 
 ### 9.5 Deletion and retention
 - **Hard delete per user** — a single action that removes all people records for one person, permanently. Not a soft-delete flag. Build this in step 7, not as an afterthought
@@ -390,8 +396,7 @@ team-management-tool/
 ├── drizzle.config.allocation.ts
 ├── drizzle.config.people.ts
 ├── data/                              [gitignored]
-│   ├── allocation.db
-│   └── people.db
+│   └── app.db
 ├── drizzle/
 │   ├── allocation/                    migrations  [committed]
 │   └── people/                        migrations  [committed]
@@ -433,31 +438,23 @@ team-management-tool/
 
 The `db → data → app` direction is one-way. Route files never import from `src/db` directly; they go through `src/data`. That is what makes the caching rule in §10.6 auditable by looking at a single directory.
 
-### 10.3 Two databases, enforced rather than intended
+### 10.3 One database, with foreign keys
 
-Implements §7 and §9.2.
+Implements §7.
 
-- **Separate everything.** Two Drizzle instances, two connections, two migration folders, two `drizzle.config` files. Nothing is shared but the `user_id` value.
-- **No SQLite `ATTACH`.** §7 requires the join to happen in application code. A consequence worth stating plainly: the people tables store `user_id` as a plain `integer` with **no foreign key**, because a cross-file foreign key is impossible. That is not a compromise — it is the mechanism.
-- **`people.db` opens lazily and is allowed to be absent.**
+- **One of everything.** One Drizzle instance, one connection, one migration folder, one `drizzle.config.ts`.
+- **`user_id` is a real foreign key.** The people tables reference `users` directly, so an orphaned 1:1 is a state the database refuses rather than one the application has to remember to avoid. No cascade: §6.6 deactivates users rather than deleting them, and §9.5's hard delete removes these rows explicitly and on purpose.
+- **One connection, opened eagerly.** A missing database is a hard failure; there is no partial mode.
 
 ```ts
-// src/db/people/client.ts
-let cached: PeopleDb | null | undefined
-
-export function getPeopleDb(): PeopleDb | null {
-  if (cached !== undefined) return cached
-  if (!existsSync(PEOPLE_DB_PATH)) return (cached = null)
-  cached = drizzle(new Database(PEOPLE_DB_PATH), { schema })
-  return cached
-}
-
-export const peopleDbAvailable = () => getPeopleDb() !== null
+// src/db/client.ts
+export const schema = { ...allocation, ...people }
+export const db = (globalForDb.__db ??= create())
 ```
 
-Every people-records read returns an explicit "unavailable" result when the file is missing, rather than throwing. Those routes render an unavailable state; the dashboard drops its people-records columns (§10.5). This turns §9.2 from a claim into something with an acceptance test: **move `people.db` aside and the whole of allocation still works.**
-
-- **Import guard.** ESLint `no-restricted-imports` prevents anything under `src/db/allocation/`, `src/data/allocation.ts` or `src/data/entities.ts` from importing `src/db/people` or `src/data/people`. The separation cannot erode by accident during a refactor.
+The absence-tolerant lazy open, and the import guard that was to keep the two
+halves from referencing each other, are both retired with §9.2. The reads no
+longer branch on a missing database and there is no unavailable state to render.
 
 ### 10.4 Schema conventions
 
@@ -506,7 +503,7 @@ Server Components read `src/data/*` directly. **There is no cache layer**, and t
 An earlier draft of this section was built on Next.js 16.3's Instant Navigations (`cacheComponents` + `partialPrefetching`). It was removed. The reasoning is recorded here so it is not reintroduced by reflex:
 
 - That feature exists to hide **server and network latency** — a round trip to a datacentre, a query against a remote database, a cold serverless function. This app has none of those. It runs on loopback against a SQLite file opened in the same process, where reading the entire allocation table costs well under a millisecond. The latency it removes is latency this app never had.
-- The cost was real: a cache-tag taxonomy to keep correct, an `updateTag`-versus-`revalidateTag` judgement on every mutation, a dev-overlay validation loop to satisfy on every route, and — worst — a caching layer that actively wanted to write note content into `.next/cache`, which then needed a carve-out to keep §9.2 true.
+- The cost was real: a cache-tag taxonomy to keep correct, an `updateTag`-versus-`revalidateTag` judgement on every mutation, a dev-overlay validation loop to satisfy on every route, and — worst — a caching layer that actively wanted to write note content into `.next/cache`, which then needed a carve-out to keep §10.6 true.
 - Removing it deletes that entire class of problem. Navigation stays fast, because the work it was hiding was already fast.
 
 What the framework configuration now contains is close to nothing — but one line is load-bearing and must not be lost:
@@ -545,13 +542,13 @@ The prev/next period arrows are plain `<Link>`s; the free-form picker uses `rout
 
 **Person view (§6.2) still uses one route per tab** under a shared `layout.tsx`. The justification is no longer prefetching — it is that a tab should be linkable, survive a refresh, and appear in browser history. That reason stands on its own and is the reason the decision survives the simplification.
 
-**Dashboard rows carry people-records data**, which is where §10.3 and §10.5 meet. "Days since last 1:1" per person, and the overdue-1:1 and open-action-item counts in the summary strip, all read `people.db`. They sit in their own `<Suspense>` boundary so that the allocation panels never wait on them, never fail because of them, and simply render without those columns when `people.db` is absent.
+**Dashboard rows carry people-records data**, which is where §10.3 and §10.5 meet. "Days since last 1:1" per person, and the overdue-1:1 and open-action-item counts in the summary strip, all read the people tables. They sit in their own `<Suspense>` boundary so that the allocation panels never wait on them and never fail because of them.
 
 **After a mutation**, the server action calls `revalidatePath` for the affected routes (§10.7). With no data cache in play, this does one job only: clearing the client-side Router Cache so a back-navigation cannot show a payload that predates the edit.
 
 ### 10.6 Keeping people-records content out of the build output
 
-§9.2 requires that `allocation.db` can be handed over, demoed or screenshotted with `people.db` simply absent. That holds only if note text lives in `people.db` and nowhere else.
+§9.5's delete is only real if note text lives in `app.db` and nowhere else. A cached or prerendered copy under `.next/` is a second location that no delete reaches.
 
 Dropping the cache layer (§10.5) removes the main threat outright: with no `'use cache'`, nothing is written to `.next/cache` at all. One residual path remains — **build-time prerendering**, which would bake rendered note content into `.next/server/app/`. It is closed explicitly rather than left to inference about what Next.js will decide to prerender:
 
@@ -563,11 +560,11 @@ export const dynamic = 'force-dynamic'
 Rules that follow:
 
 - No `'use cache'`, no `unstable_cache`, and no `generateStaticParams` under `src/data/people.ts`, `src/components/people/`, or any people-records route. An ESLint `no-restricted-syntax` rule enforces this, so it cannot arrive later as a well-meaning performance tweak.
-- The §9.5 hard-delete is genuinely complete: deleting the rows from `people.db` deletes the data, with no cache entry and no prerendered artefact left to sweep up afterwards.
+- The §9.5 hard-delete is genuinely complete: deleting the rows deletes the data, with no cache entry and no prerendered artefact left to sweep up afterwards.
 - Note content never appears in a build output that could be committed, copied or shared.
-- **§9.5's leaver flow crosses the boundary between the two, so it is specified here.** Deactivating a user is an allocation write and must never cascade into the people records automatically: allocation history is retained for capacity analysis, while personal notes are not. `deactivateUser()` therefore writes only to `allocation.db`, then — if `peopleDbAvailable()` — returns a flag that prompts a *separate, explicitly confirmed* hard delete of that user's people records. Two actions, two confirmations, never one cascading write.
+- **§9.5's leaver flow stays two explicit steps.** Deactivating a user must never cascade into their people records: allocation history is retained for capacity analysis, while personal notes are not. `deactivateUser()` writes only the `active` flag, then returns a flag that prompts a *separate, explicitly confirmed* hard delete. One database now makes a single cascading write technically easy, which is exactly why the schema declines it — no `onDelete` on the people tables' `user_id`. Two actions, two confirmations.
 
-**The §5.2 prep panel is where the separation gets tested.** That panel is the whole reason the two halves share an application, and it deliberately mixes them: current allocation and recent allocation changes come from `allocation.db`, while open action items, unshared feedback and stalling goals come from `people.db`. It is assembled from two independent reads in the component tree, never from one function that queries both databases. That keeps the allocation half rendering normally when `people.db` is absent, and keeps a single failure on the people side from taking the panel down.
+**The §5.2 prep panel is where the two halves meet.** It is the whole reason they share an application: current allocation and recent allocation changes alongside open action items, unshared feedback and stalling goals. It is still assembled from independent reads in the component tree rather than one function that fetches everything, so a slow or failing people read cannot take the allocation half of the panel down with it.
 
 **§9.3's guidance is a component, not a notice.** The requirement is persistent helper text in the 1:1 editor, explicitly *not* a dismissible one-time notice. It is implemented as a static, always-rendered panel in the editor layout with no dismiss control and no persisted "seen" state — there is nothing to dismiss and nothing to remember. It is part of the page, so it is present before any note content loads.
 

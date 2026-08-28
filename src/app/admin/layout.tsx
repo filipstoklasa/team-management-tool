@@ -1,5 +1,4 @@
 import { SectionTabs } from "@/components/section-tabs";
-import { peopleRecordsAvailable } from "@/data/people.ts";
 
 /**
  * §6.6 Admin and §9.5 retention, presented as one section (#5).
@@ -9,10 +8,7 @@ import { peopleRecordsAvailable } from "@/data/people.ts";
  * looking after the records rather than using them — so they share a heading
  * and a tab strip.
  *
- * This groups them in the navigation only. They remain separate routes with
- * separate reads, which is what §9.2 means by separate screens: /admin touches
- * allocation.db alone, and the retention tab simply is not offered when
- * people.db is absent.
+ * This groups them in the navigation only; they remain separate routes.
  */
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
@@ -28,9 +24,7 @@ export default function AdminLayout({ children }: LayoutProps<"/admin">) {
       <SectionTabs
         tabs={[
           { href: "/admin", label: "People, apps and teams", exact: true },
-          ...(peopleRecordsAvailable()
-            ? [{ href: "/admin/retention", label: "Retention review" }]
-            : []),
+          { href: "/admin/retention", label: "Retention review" },
         ]}
       />
 

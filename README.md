@@ -143,16 +143,15 @@ drizzle/        migrations
 scripts/        seed, backup, restore
 ```
 
-**Two databases, never joined in SQL.** `allocation.db` and `people.db` are
-separate files with no `ATTACH` and no cross-file foreign key. People records
-store `user_id` as a plain integer and the join happens in the component tree.
-That constraint is what makes the next property achievable rather than
-aspirational.
+**One database, with real foreign keys.** Allocations, people, teams, apps and
+1:1 records all live in `data/app.db`. People records reference `users` directly,
+so an orphaned 1:1 is a state the database refuses rather than one the
+application has to remember to avoid.
 
-**Allocation works with `people.db` absent.** Remove the file and allocation
-remains fully functional: the dashboard drops its People columns instead of
-reporting zeros, and People screens report that the records are not present. A
-standing acceptance test covers this.
+**Deleting a leaver never cascades.** The people tables deliberately carry no
+`onDelete` on `user_id`. Deactivating someone keeps their allocation history for
+capacity analysis and leaves their notes alone; removing the notes is a separate,
+explicitly confirmed action.
 
 **Dates are text, intervals are half-open.** `YYYY-MM-DD` sorts
 lexicographically, so "as of D" is a direct SQL comparison. `[start, end)` means
@@ -184,19 +183,19 @@ stricter standard than the rest of the application.
   prompt rather than a cascade: allocation history is retained for capacity
   analysis, personal notes need not be.
 
-When removing `people.db` from a machine, remove its sidecars as well. A `-wal`
+When removing the database from a machine, remove its sidecars as well. A `-wal`
 file holds committed pages that a clean shutdown checkpoints away but a crash
 does not:
 
 ```sh
-rm -f data/people.db data/people.db-wal data/people.db-shm
+rm -f data/app.db data/app.db-wal data/app.db-shm
 ```
 
 ## Backup and restore
 
 `data/` is excluded from version control, so the repository rebuilds the
 application but never carries its contents. Transferring an installation is
-therefore two operations: the code through git, the databases through a backup.
+therefore two operations: the code through git, the database through a backup.
 
 ### Creating a backup
 
@@ -205,12 +204,12 @@ npm run db:backup       # writes backup/<timestamp>/
 ```
 
 The script uses SQLite's `VACUUM INTO` rather than a file copy. A live database
-keeps recent commits in a `-wal` sidecar, so copying `allocation.db` by hand can
-silently drop the most recent edits. Each output file is integrity-checked, and a
+keeps recent commits in a `-wal` sidecar, so copying `app.db` by hand can
+silently drop the most recent edits. The output is integrity-checked, and a
 `manifest.json` records row counts for verification after transfer.
 
 `backup/` is gitignored. Move it manually — on removable or encrypted media
-rather than a cloud drive when it contains `people.db`.
+rather than a cloud drive, since it contains the 1:1 notes.
 
 ### Restoring
 
@@ -227,22 +226,24 @@ Restore before migrating. The backup carries its own migration history, so
 `db:migrate` applies only what was added since and correctly does nothing when
 the backup is current.
 
-`db:restore` refuses to overwrite an existing database without `--force`, and
-never touches a database the backup does not contain.
+`db:restore` refuses to overwrite an existing database without `--force`.
 
 Do not copy `node_modules/` between machines — it contains a native binary built
 for the source machine's platform. `npm ci` fetches the correct one.
 
-### Allocation data without People data
+### Upgrading from the two-database layout
+
+Installations created before the databases were merged have `allocation.db` and
+`people.db` side by side. One command moves them into `app.db`:
 
 ```sh
-mkdir transfer && cp backup/<timestamp>/allocation.db transfer/
-npm run db:restore -- transfer
+npm run db:merge
 ```
 
-The application runs normally and People screens report that the records are not
-present. This is the supported path for a demo, a screenshot, or handing the
-allocation side to someone else.
+Both original files are left untouched, so the migration is repeatable: delete
+`app.db` and run it again. It refuses to start if rows reference a user that does
+not exist — a state the old layout could not detect, because `user_id` had no
+foreign key — and `-- --drop-orphans` leaves those rows behind.
 
 ## Development
 

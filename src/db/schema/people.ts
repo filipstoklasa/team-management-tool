@@ -1,17 +1,19 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { IsoDate } from "../../domain/date.ts";
+import { users } from "./allocation.ts";
 
 /**
- * people.db — 1:1s, goals and feedback (§5).
+ * 1:1s, goals and feedback (§5). Personal data about identifiable people, so
+ * §9 still governs what may be written here and how long it is kept.
  *
- * Holds personal data about identifiable employees (§9). Kept in a separate
- * file so allocation.db can be demoed or handed over with this one simply
- * absent (§9.2).
+ * `userId` is a real foreign key. It could not be while these tables lived in
+ * a second file; now that they do not, an orphaned 1:1 is a state the database
+ * refuses rather than one the application has to remember to avoid.
  *
- * NOTE: `userId` is a plain integer with NO foreign key. It cannot have one —
- * `users` lives in the other database file, and §7 requires the join to happen
- * in application code rather than via ATTACH. That is the mechanism, not a
- * compromise: nothing in this file references anything in allocation.db.
+ * No `onDelete: "cascade"` on these: §6.6 deactivates users rather than
+ * deleting them, and §9.5's hard delete is a deliberate, separately confirmed
+ * action that removes these rows explicitly. A cascade would make it possible
+ * to lose someone's records as a side effect of a different operation.
  */
 
 /** §5.1 — a single 1:1 session. */
@@ -19,7 +21,9 @@ export const oneOnOnes = sqliteTable(
   "one_on_ones",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    userId: integer("user_id").notNull(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
     date: text("date").$type<IsoDate>().notNull(),
     /** What the manager recorded. */
     managerNotes: text("manager_notes"),
@@ -36,7 +40,9 @@ export const actionItems = sqliteTable(
   "action_items",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    userId: integer("user_id").notNull(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
     oneOnOneId: integer("one_on_one_id").references(() => oneOnOnes.id, {
       onDelete: "set null",
     }),
@@ -57,7 +63,9 @@ export const goals = sqliteTable(
   "goals",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    userId: integer("user_id").notNull(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
     title: text("title").notNull(),
     detail: text("detail"),
     category: text("category", {
@@ -94,7 +102,9 @@ export const feedback = sqliteTable(
   "feedback",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    userId: integer("user_id").notNull(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
     date: text("date").$type<IsoDate>().notNull(),
     direction: text("direction", { enum: ["given", "received"] }).notNull(),
     /** Who it came from, for 'received'. */

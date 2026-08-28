@@ -1,11 +1,10 @@
-import { PeopleRecordsUnavailable } from "@/components/people/people-records-unavailable";
 import {
   RetentionReview,
   type RetentionGroup,
 } from "@/components/admin/retention-review";
 import { getAllUsers } from "@/data/allocation.ts";
 import { getRetentionCandidates } from "@/data/people.ts";
-import type { Feedback, OneOnOne } from "@/db/people/schema.ts";
+import type { Feedback, OneOnOne } from "@/db/schema/people.ts";
 
 const DEFAULT_MONTHS = 24;
 
@@ -21,33 +20,33 @@ export default async function RetentionPage({
   searchParams,
 }: PageProps<"/admin/retention">) {
   const params = await searchParams;
-  const raw = Number(Array.isArray(params.months) ? params.months[0] : params.months);
+  const raw = Number(
+    Array.isArray(params.months) ? params.months[0] : params.months,
+  );
   const months =
-    Number.isFinite(raw) && raw >= 1 ? Math.min(Math.round(raw), 240) : DEFAULT_MONTHS;
+    Number.isFinite(raw) && raw >= 1
+      ? Math.min(Math.round(raw), 240)
+      : DEFAULT_MONTHS;
 
   const candidates = await getRetentionCandidates(months);
 
   return (
     <div className="space-y-6">
       <p className="text-muted-foreground max-w-2xl text-sm">
-        People records are a working tool, not a permanent record. Old 1:1 notes and
-        feedback are deleted, not archived. Allocation history is never touched by this
-        screen.
+        People records are a working tool, not a permanent record. Old 1:1 notes
+        and feedback are deleted, not archived. Allocation history is never
+        touched by this screen.
       </p>
 
-      {candidates === null ? (
-        <PeopleRecordsUnavailable />
-      ) : (
-        <RetentionReview
-          months={months}
-          cutoff={candidates.cutoff}
-          totals={{
-            sessions: candidates.sessions.length,
-            feedback: candidates.feedback.length,
-          }}
-          groups={await groupByPerson(candidates)}
-        />
-      )}
+      <RetentionReview
+        months={months}
+        cutoff={candidates.cutoff}
+        totals={{
+          sessions: candidates.sessions.length,
+          feedback: candidates.feedback.length,
+        }}
+        groups={await groupByPerson(candidates)}
+      />
     </div>
   );
 }
