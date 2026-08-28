@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarClock, LayoutGrid, Settings, Shredder, Users } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -50,6 +51,7 @@ export function MainNav() {
         <div className="text-muted-foreground ml-auto flex items-center gap-1.5 text-xs">
           <span className="bg-status-full size-1.5 rounded-full" />
           Local only
+          <ThemeToggle />
         </div>
       </div>
     </header>
