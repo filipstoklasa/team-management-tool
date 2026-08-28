@@ -14,6 +14,7 @@ import { Timeline } from "@/components/timeline";
 import { StaffingChart } from "@/components/apps/staffing-chart";
 import { ChangeHistory } from "@/components/allocation/change-history";
 import { NewAllocationButton } from "@/components/allocation/new-allocation-button";
+import { ReportToolbar } from "@/components/allocation/report-toolbar";
 import {
   getAllUsers,
   getAllocationChanges,
@@ -24,10 +25,14 @@ import {
 } from "@/data/allocation.ts";
 import { today } from "@/domain/date.ts";
 import { appColor, appStatusMeta, formatPercent } from "@/lib/status.ts";
+import { filterByRange, parseReportRange } from "@/lib/report.ts";
 import { cn } from "@/lib/utils";
 
 /** §6.3 — app detail. */
-export default async function AppDetailPage({ params }: PageProps<"/apps/[appId]">) {
+export default async function AppDetailPage({
+  params,
+  searchParams,
+}: PageProps<"/apps/[appId]">) {
   const { appId } = await params;
   const id = Number(appId);
   if (!Number.isInteger(id)) notFound();
@@ -35,7 +40,7 @@ export default async function AppDetailPage({ params }: PageProps<"/apps/[appId]
   const app = await getApp(id);
   if (!app) notFound();
 
-  const [rows, staffing, changes, allApps, users] = await Promise.all([
+  const [all, staffing, changes, allApps, users] = await Promise.all([
     getAppAllocationHistory(id),
     getAppStaffingOverTime(id),
     getAllocationChanges({ appId: id, limit: 30 }),
@@ -45,6 +50,10 @@ export default async function AppDetailPage({ params }: PageProps<"/apps/[appId]
 
   const entry = allApps.find((a) => a.app.id === id);
   const meta = entry ? appStatusMeta[entry.status] : null;
+
+  // #2 — as on the §6.2 tab, the export range also narrows the tables below, so
+  // the CSV and the printed page always match what is on screen.
+  const rows = filterByRange(all, parseReportRange(await searchParams));
 
   return (
     <div className="space-y-5">
@@ -82,6 +91,8 @@ export default async function AppDetailPage({ params }: PageProps<"/apps/[appId]
           </div>
         )}
       </div>
+
+      <ReportToolbar csvBase={`/export?scope=app&id=${id}`} />
 
       <Card className="gap-3">
         <CardHeader>
