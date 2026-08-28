@@ -41,8 +41,8 @@ export function filterByRange(
 const HEADER = ["Person", "App", "Percentage", "Start date", "End date"] as const;
 
 /**
- * §9.2 requires separate export paths per module. This one is Module A only —
- * it takes allocation rows and has no access to anything in people.db.
+ * §9.2 requires separate export paths for the two halves. This is the
+ * allocation one: it takes allocation rows and has no access to people.db.
  */
 export function allocationCsv(rows: readonly AllocationRow[]): string {
   return toCsv(

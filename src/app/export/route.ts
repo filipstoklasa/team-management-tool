@@ -15,9 +15,9 @@ import {
  * CSV export for the §6.2 and §6.3 allocation reports (#2).
  *
  * One handler rather than one per screen: the two reports differ only in which
- * history function they call and what the file is named after. Both are Module
- * A reads — §9.2 requires export paths stay separated per module, so nothing
- * here may ever reach into `people.db`.
+ * history function they call and what the file is named after. Both are
+ * allocation reads — §9.2 requires the two export paths stay separate, so
+ * nothing here may ever reach into `people.db`.
  *
  * A route handler rather than a server action because the browser needs a plain
  * same-origin navigation to trigger a download. The production CSP allows that;
