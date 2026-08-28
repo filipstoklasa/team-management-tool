@@ -556,7 +556,9 @@ Rules that follow:
 
 ### 10.7 Mutations and validation
 
-All writes are `"use server"` actions in `src/actions/`. Zod schemas in `src/domain/schemas.ts` are used twice: by the client form (shadcn `Form` → react-hook-form → `zodResolver`) and again inside the action, because client validation is a convenience and never a guarantee.
+All writes are `"use server"` actions in `src/actions/`. Zod schemas live in `src/domain/schemas.ts` and are parsed **inside the action**, which is the only validation that is ever a guarantee.
+
+Forms are plain controlled React state submitted through `useTransition()`, calling the server action directly. `react-hook-form` and `zodResolver` are deliberately **not** installed: the action already returns typed `FieldError[]`, so a second client-side copy of the schema would be one more dependency and one more thing to keep in sync, for a single-user local tool where the round trip is a few milliseconds. The forms render `result.errors` returned by the action, and per-field errors are matched by the `field` key.
 
 **The return type is what makes §4.3 implementable.** That section requires overlap and range errors to *block*, while over-100% allocation only *warns* and must never prevent the save. A boolean success flag cannot express that, so actions return:
 
@@ -645,7 +647,7 @@ Mapping §8's build order onto this architecture:
 | §8 step | Lands in | Notes |
 |---|---|---|
 | 1. Schema, migrations, seed | `src/db/**`, `drizzle/**`, `scripts/seed.ts` | Both databases. Fictional names |
-| 2. Entity CRUD | `src/data/entities.ts`, `src/actions/entities.ts`, `src/app/admin/` | Deactivate, never delete (§6.6) |
+| 2. Entity CRUD | `src/actions/entities.ts`, `src/app/admin/` | Reads live in `src/data/allocation.ts` — users, teams and apps are Module A tables. Deactivate, never delete (§6.6) |
 | 3. Allocation create/edit | `src/actions/allocation.ts`, `src/domain/intervals.ts` | The §10.7 transaction |
 | 4. "As of D" + metrics | `src/data/allocation.ts`, `src/domain/metrics.ts` | The §4.2 core query |
 | 5. Dashboard | `src/app/page.tsx` | The §10.5 Suspense split |
@@ -653,7 +655,7 @@ Mapping §8's build order onto this architecture:
 | 7. 1:1s + carry-over | `src/data/people.ts`, `src/app/people/[userId]/one-on-ones/` | §10.6 applies from the first line. Hard-delete (§9.5) built here, not later |
 | 8. Goals and feedback | `src/components/people/` | |
 | 9. App detail + chart | `src/app/apps/[appId]/` | shadcn `chart` |
-| 10. Audit, retention, polish | `src/app/retention/` | §9.5 retention review |
+| 10. Audit, retention, polish | `src/app/retention/`, `src/components/allocation/change-history.tsx`, `src/app/**/loading.tsx` | §9.5 retention review; §4.2 audit trail surfaced on the person and app views |
 
 **Acceptance checks for the development phase:**
 

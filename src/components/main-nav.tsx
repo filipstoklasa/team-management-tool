@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarClock, LayoutGrid, Settings, Users } from "lucide-react";
+import { CalendarClock, LayoutGrid, Settings, Shredder, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -10,6 +10,7 @@ const links = [
   { href: "/people", label: "People", icon: Users },
   { href: "/apps", label: "Apps", icon: CalendarClock },
   { href: "/admin", label: "Admin", icon: Settings },
+  { href: "/retention", label: "Retention", icon: Shredder },
 ];
 
 export function MainNav() {

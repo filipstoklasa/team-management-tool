@@ -11,7 +11,7 @@
  */
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { addDays, addMonths, asIsoDate, today, type IsoDate } from "../src/domain/date.ts";
+import { addDays, addMonths, today, type IsoDate } from "../src/domain/date.ts";
 import { applyPragmas } from "../src/db/pragmas.ts";
 import { ALLOCATION_DB_PATH, PEOPLE_DB_PATH } from "../src/db/paths.ts";
 import * as a from "../src/db/allocation/schema.ts";

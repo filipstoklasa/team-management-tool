@@ -8,6 +8,18 @@ export interface Stat {
 }
 
 /**
+ * Static classes, because Tailwind cannot see an interpolated one. The strip
+ * has three stats without Module B and five with it, so only those widths and
+ * the one in between can occur — and an empty grid cell would read as a missing
+ * number rather than as an absent module.
+ */
+const columns: Record<number, string> = {
+  3: "lg:grid-cols-3",
+  4: "lg:grid-cols-4",
+  5: "lg:grid-cols-5",
+};
+
+/**
  * §6.1 — "Summary strip — counts: underallocated people, under-resourced apps,
  * unallocated people, overdue 1:1s, open action items."
  *
@@ -16,7 +28,12 @@ export interface Stat {
  */
 export function SummaryStrip({ stats }: { stats: Stat[] }) {
   return (
-    <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-3 lg:grid-cols-5">
+    <dl
+      className={cn(
+        "bg-border grid grid-cols-2 gap-px overflow-hidden rounded-lg border sm:grid-cols-3",
+        columns[stats.length] ?? "lg:grid-cols-5",
+      )}
+    >
       {stats.map((stat) => (
         <div key={stat.label} className="bg-card px-4 py-3" title={stat.hint}>
           <dt className="text-muted-foreground text-xs">{stat.label}</dt>

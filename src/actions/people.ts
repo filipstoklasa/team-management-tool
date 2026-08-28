@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq, inArray, lt } from "drizzle-orm";
+import { eq, inArray, lt } from "drizzle-orm";
 import { getPeopleDb } from "@/db/people/client.ts";
 import {
   actionItems,
@@ -389,5 +389,3 @@ export async function countPersonRecords(
       .length,
   };
 }
-
-export { and };
