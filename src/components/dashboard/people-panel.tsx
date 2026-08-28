@@ -3,7 +3,7 @@ import { CircleAlert, MessageSquareOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AllocationBar } from "@/components/allocation-bar";
 import type { PersonAllocation } from "@/data/allocation.ts";
-import { formatPercent, personStatusMeta } from "@/lib/status.ts";
+import { OVERDUE_1ON1_DAYS, formatPercent, personStatusMeta } from "@/lib/status.ts";
 import { cn } from "@/lib/utils";
 
 /**
@@ -99,7 +99,7 @@ export function PeoplePanel({
                       never
                     </span>
                   ) : (
-                    <span className={cn(since > 30 && "text-status-under font-medium")}>
+                    <span className={cn(since > OVERDUE_1ON1_DAYS && "text-status-under font-medium")}>
                       {since}d
                     </span>
                   )}

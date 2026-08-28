@@ -239,9 +239,13 @@ Date control at the top drives every allocation panel below it.
 - **Apps panel** — `current allocation / required_capacity`, sorted by shortfall descending, same colour coding
 - **Team filter** — multi-select, filters both panels
 - **Summary strip** — counts: underallocated people, under-resourced apps, unallocated people, overdue 1:1s, open action items
+- **Overdue is 30 days.** A person is overdue when their most recent 1:1 is more than 30 days old, *or* when no 1:1 has ever been recorded for them — someone never spoken to is the most overdue there is, not an absent row. The same threshold highlights the "days since last 1:1" figure in the people panel. There is no per-person cadence: one interval applies to everyone, and the count is derived at read time, never stored
 
-### 6.2 Person view
-One screen per report, tabbed. This is the screen used most.
+### 6.2 People index and person view
+
+**People index** — every active person as a card: allocation total, status colour, and days since last 1:1. Unlike the dashboard it has no date control; it is always as of today, and exists as the way into a person rather than as an analysis screen.
+
+**Person view** — one screen per report, tabbed. This is the screen used most.
 
 - **Overview tab** — current allocations, active goals, open action items, days since last 1:1
 - **1:1s tab** — reverse-chronological session list; opening a new one loads the prep panel from 5.2
@@ -249,7 +253,11 @@ One screen per report, tabbed. This is the screen used most.
 - **Feedback tab** — feedback log, filterable by direction and category, with unshared items highlighted
 - **Allocation tab** — Gantt-style timeline of their app assignments over time, past and future
 
-### 6.3 App detail
+### 6.3 Apps index and app detail
+
+**Apps index** — every active app as a card with its allocation against `required_capacity`, as of today, with no date control. The way into an app.
+
+**App detail**
 - App fields, `required_capacity`, teams
 - Who is allocated, at what %, over what period — timeline view
 - Staffing-over-time chart: total allocation vs. required capacity, making trends visible

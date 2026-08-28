@@ -82,6 +82,13 @@ export function appColor(appId: number): string {
   return APP_HUES[appId % APP_HUES.length];
 }
 
+/**
+ * §6.1 — a 1:1 is overdue this many days after the last one. One interval for
+ * everyone; there is no per-person cadence. Lives here because the dashboard
+ * count and the people-panel highlight must agree.
+ */
+export const OVERDUE_1ON1_DAYS = 30;
+
 export function formatPercent(value: number): string {
   return `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
 }
